@@ -49,6 +49,7 @@ mkdir -p "$TARGET_DIR/.ai/docs/migrations"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_LOCAL="$(dirname "$SCRIPT_DIR")"
 
+# 파일 복사 (항상 덮어씀 — agents, scripts, skills 등 템플릿 파일)
 copy_or_download() {
   local src="$1"
   local dest="$2"
@@ -63,41 +64,73 @@ copy_or_download() {
   fi
 }
 
+# 파일 복사 (이미 있으면 건너뜀 — 프로젝트별 커스텀 파일)
+copy_if_not_exists() {
+  local src="$1"
+  local dest="$2"
+
+  if [ -f "$dest" ]; then
+    echo "  건너뜀 (이미 있음): $(basename $dest)"
+    return
+  fi
+
+  if [ -f "$TEMPLATE_LOCAL/$src" ]; then
+    cp "$TEMPLATE_LOCAL/$src" "$dest"
+    echo "  생성: $(basename $dest)"
+  else
+    curl -sf "$TEMPLATE_REPO/$src" -o "$dest" || {
+      echo -e "${RED}[오류] $src 다운로드 실패${NC}"
+      exit 1
+    }
+    echo "  생성: $(basename $dest)"
+  fi
+}
+
 echo -e "${GREEN}[2/5] 에이전트 설정 복사...${NC}"
+# agents, scripts, skills는 항상 최신 템플릿으로 덮어씀
 copy_or_download ".claude/agents/codex-reasoner.md" "$TARGET_DIR/.claude/agents/codex-reasoner.md"
 copy_or_download ".claude/agents/gemini-researcher.md" "$TARGET_DIR/.claude/agents/gemini-researcher.md"
 copy_or_download ".claude/scripts/call-gemini.sh" "$TARGET_DIR/.claude/scripts/call-gemini.sh"
 chmod +x "$TARGET_DIR/.claude/scripts/call-gemini.sh"
-copy_or_download ".claude/settings.json" "$TARGET_DIR/.claude/settings.json"
 copy_or_download ".claude/skills/new-spec/SKILL.md" "$TARGET_DIR/.claude/skills/new-spec/SKILL.md"
 copy_or_download ".claude/skills/update-task/SKILL.md" "$TARGET_DIR/.claude/skills/update-task/SKILL.md"
+# settings.json은 이미 있으면 건너뜀 (기존 hook 설정 보호)
+copy_if_not_exists ".claude/settings.json" "$TARGET_DIR/.claude/settings.json"
 
 echo -e "${GREEN}[3/5] AI 문서 복사...${NC}"
+# README, agents, context-reset은 항상 최신으로 덮어씀 (워크플로우 규칙)
 copy_or_download ".ai/README.md" "$TARGET_DIR/.ai/README.md"
 copy_or_download ".ai/agents.md" "$TARGET_DIR/.ai/agents.md"
 copy_or_download ".ai/context-reset.md" "$TARGET_DIR/.ai/context-reset.md"
+# 프로젝트별 파일은 이미 있으면 건너뜀
+copy_if_not_exists ".ai/architecture.md" "$TARGET_DIR/.ai/architecture.md"
+copy_if_not_exists ".ai/conventions.md" "$TARGET_DIR/.ai/conventions.md"
 
 # 템플릿 변수 치환해서 생성
 echo -e "${GREEN}[4/5] 프로젝트 설정 파일 생성...${NC}"
 
-# architecture.md
-cat "$TEMPLATE_LOCAL/.ai/architecture.md" > "$TARGET_DIR/.ai/architecture.md"
+# CLAUDE.md — 이미 있으면 건너뜀
+if [ -f "$TARGET_DIR/CLAUDE.md" ]; then
+  echo "  건너뜀 (이미 있음): CLAUDE.md"
+else
+  sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
+    "$TEMPLATE_LOCAL/CLAUDE.md.template" > "$TARGET_DIR/CLAUDE.md"
+  echo "  생성: CLAUDE.md"
+fi
 
-# conventions.md
-cat "$TEMPLATE_LOCAL/.ai/conventions.md" > "$TARGET_DIR/.ai/conventions.md"
+# CURRENT_TASK.md — 이미 있으면 건너뜀
+if [ -f "$TARGET_DIR/CURRENT_TASK.md" ]; then
+  echo "  건너뜀 (이미 있음): CURRENT_TASK.md"
+else
+  sed "s/{{DATE}}/$TODAY/g" \
+    "$TEMPLATE_LOCAL/CURRENT_TASK.md.template" > "$TARGET_DIR/CURRENT_TASK.md"
+  echo "  생성: CURRENT_TASK.md"
+fi
 
-# CLAUDE.md (변수 치환)
-sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
-  "$TEMPLATE_LOCAL/CLAUDE.md.template" > "$TARGET_DIR/CLAUDE.md"
-
-# CURRENT_TASK.md (변수 치환)
-sed "s/{{DATE}}/$TODAY/g" \
-  "$TEMPLATE_LOCAL/CURRENT_TASK.md.template" > "$TARGET_DIR/CURRENT_TASK.md"
-
-# .ai/docs 빈 파일들
-touch "$TARGET_DIR/.ai/docs/PROJECT.md"
-touch "$TARGET_DIR/.ai/docs/TODO.md"
-touch "$TARGET_DIR/.ai/docs/API_DOCS.md"
+# .ai/docs 빈 파일들 — 이미 있으면 건너뜀
+[ -f "$TARGET_DIR/.ai/docs/PROJECT.md" ] || touch "$TARGET_DIR/.ai/docs/PROJECT.md"
+[ -f "$TARGET_DIR/.ai/docs/TODO.md" ]    || touch "$TARGET_DIR/.ai/docs/TODO.md"
+[ -f "$TARGET_DIR/.ai/docs/API_DOCS.md" ] || touch "$TARGET_DIR/.ai/docs/API_DOCS.md"
 
 # .gitignore 업데이트
 echo -e "${GREEN}[5/5] .gitignore 업데이트...${NC}"
