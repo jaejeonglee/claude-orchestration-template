@@ -1,0 +1,36 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | jq -r '.file_path // empty' 2>/dev/null); if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -qE '\\.(js|cjs|mjs|ts|tsx)$'; then npx eslint --fix \"$FILE\" 2>/dev/null; fi; exit 0"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "방금 작업에서 코드 변경이 있었다면 확인하세요. 다음 중 하나라도 해당되면 {\"ok\": false, \"reason\": \"[이유]\"} 로 응답하세요: 1) 명백한 에러 핸들링 누락, 2) 관련 문서(PROJECT.md, API_DOCS.md 등) 동기화가 필요한데 안 됨, 3) CURRENT_TASK.md 업데이트가 필요한데 안 됨. 문제 없으면 {\"ok\": true} 로 응답하세요."
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '=== 컨텍스트 압축 이후 재개 ===' && cat .ai/context-reset.md 2>/dev/null && echo '---' && cat CURRENT_TASK.md 2>/dev/null && echo '---' && git log --oneline -5 2>/dev/null"
+          }
+        ]
+      }
+    ]
+  }
+}
