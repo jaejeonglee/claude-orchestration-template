@@ -8,6 +8,8 @@ Claude(오케스트레이터) + codex-reasoner(깊은 추론) + gemini-researche
 
 ## 빠른 시작
 
+### 신규 프로젝트
+
 ```bash
 # 프로젝트 루트에서 실행
 bash <(curl -s https://raw.githubusercontent.com/ljjunh/claude-orchestration-template/main/scripts/init.sh)
@@ -19,6 +21,33 @@ bash <(curl -s https://raw.githubusercontent.com/ljjunh/claude-orchestration-tem
 git clone https://github.com/ljjunh/claude-orchestration-template
 bash claude-orchestration-template/scripts/init.sh
 ```
+
+설치 후 `.ai/architecture.md`, `.ai/conventions.md`, `.ai/docs/PROJECT.md`를 직접 작성하면 준비 완료.
+
+---
+
+### 기존 프로젝트 (이미 코드가 있는 경우)
+
+```bash
+# 1. 구조 설치
+bash <(curl -s https://raw.githubusercontent.com/ljjunh/claude-orchestration-template/main/scripts/init.sh)
+
+# 2. 프로젝트 분석
+bash <(curl -s https://raw.githubusercontent.com/ljjunh/claude-orchestration-template/main/scripts/analyze.sh)
+
+# 3. Claude 실행 — 자동으로 .ai/ 문서를 채워줌
+claude
+```
+
+`analyze.sh`가 하는 일:
+- `package.json`, 디렉토리 구조, 라우트, DB 스키마, 환경변수, `git log` 수집
+- `.ai/docs/raw-analysis.md` 생성
+- `CURRENT_TASK.md`에 "이 정보 보고 문서 채워줘" 지시 작성
+
+`claude` 실행하면:
+- `raw-analysis.md` 읽고 `.ai/` 문서 자동 채움
+- `raw-analysis.md` 삭제
+- 완료 보고
 
 ---
 
@@ -69,9 +98,13 @@ CURRENT_TASK.md               # AI 핸드오프 노트
 
 ```
 gemini-researcher → 기획 초안
-codex-reasoner   → 코드 기준 리뷰
+codex-reasoner   → 스펙 리뷰
 사람             → 확정
-Claude           → 구현 → 문서 동기화 → draft 삭제
+Claude           → 구현
+codex-reasoner   → 코드 리뷰 (Critical/Warning/Info)
+Critical/Warning → 사람 보고 후 반영
+Info             → Claude 바로 반영
+Claude           → 문서 동기화 + draft 삭제
 ```
 
 ---
