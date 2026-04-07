@@ -12,13 +12,13 @@ Claude(오케스트레이터) + codex-reasoner(깊은 추론) + gemini-researche
 
 ```bash
 # 프로젝트 루트에서 실행
-bash <(curl -s https://raw.githubusercontent.com/ljjunh/claude-orchestration-template/main/scripts/init.sh)
+bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main/scripts/init.sh)
 ```
 
 또는 클론 후:
 
 ```bash
-git clone https://github.com/ljjunh/claude-orchestration-template
+git clone https://github.com/jaejeonglee/claude-orchestration-template
 bash claude-orchestration-template/scripts/init.sh
 ```
 
@@ -30,10 +30,10 @@ bash claude-orchestration-template/scripts/init.sh
 
 ```bash
 # 1. 구조 설치
-bash <(curl -s https://raw.githubusercontent.com/ljjunh/claude-orchestration-template/main/scripts/init.sh)
+bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main/scripts/init.sh)
 
 # 2. 프로젝트 분석
-bash <(curl -s https://raw.githubusercontent.com/ljjunh/claude-orchestration-template/main/scripts/analyze.sh)
+bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main/scripts/analyze.sh)
 
 # 3. Claude 실행 — 자동으로 .ai/ 문서를 채워줌
 claude

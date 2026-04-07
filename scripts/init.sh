@@ -1,11 +1,11 @@
 #!/bin/bash
 # claude-orchestration-template init script
-# 사용법: bash <(curl -s https://raw.githubusercontent.com/ljjunh/claude-orchestration-template/main/scripts/init.sh)
+# 사용법: bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main/scripts/init.sh)
 # 또는 클론 후: bash scripts/init.sh
 
 set -e
 
-TEMPLATE_REPO="https://raw.githubusercontent.com/ljjunh/claude-orchestration-template/main"
+TEMPLATE_REPO="https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main"
 TARGET_DIR="${1:-$(pwd)}"
 TODAY=$(date +%Y-%m-%d)
 
