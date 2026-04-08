@@ -90,9 +90,9 @@ Claude           → 문서 동기화 + draft 삭제
 
 | Hook | 동작 |
 |---|---|
+| `SessionStart` | 세션 시작 시 CURRENT_TASK.md + 최근 커밋 출력 |
 | `PostToolUse (Edit\|Write)` | JS/TS 파일 수정 시 ESLint auto-fix |
 | `Stop` | 작업 완료 시 문서 동기화·에러 핸들링 체크 |
-| `SessionStart (compact)` | 컨텍스트 압축 이후 자동으로 복구 안내 + CURRENT_TASK 출력 |
 
 ---
 

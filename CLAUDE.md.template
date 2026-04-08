@@ -2,13 +2,14 @@
 
 ---
 
-## 프로젝트 진입
+## 세션 시작 시
 
-새 세션이거나 컨텍스트가 끊겼다면:
+SessionStart 훅이 `.claude/CURRENT_TASK.md`를 출력한다. 미완료 작업이 있으면 상태를 보고하고, 사용자 지시를 기다린다.
+
+프로젝트 맥락이 필요하면:
 
 1. `.claude/docs/architecture.md` — 시스템 구조
 2. `.claude/docs/conventions.md` — 프로젝트 규칙
-3. `.claude/CURRENT_TASK.md` — 현재 작업 상태
 
 ---
 

@@ -23,11 +23,10 @@
     ],
     "SessionStart": [
       {
-        "matcher": "compact",
         "hooks": [
           {
             "type": "command",
-            "command": "echo '=== 컨텍스트 압축 이후 재개 ===' && echo '1. .claude/docs/architecture.md 읽기' && echo '2. .claude/docs/conventions.md 읽기' && echo '3. .claude/CURRENT_TASK.md 읽기' && echo '---' && cat .claude/CURRENT_TASK.md 2>/dev/null && echo '---' && git log --oneline -5 2>/dev/null"
+            "command": "echo '=== 현재 작업 ===' && cat .claude/CURRENT_TASK.md 2>/dev/null && echo '---' && git log --oneline -5 2>/dev/null"
           }
         ]
       }
