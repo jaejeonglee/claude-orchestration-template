@@ -4,7 +4,10 @@
 
 ## 세션 시작 시
 
-SessionStart 훅이 `.claude/CURRENT_TASK.md`를 출력한다. 미완료 작업이 있으면 상태를 보고하고, 사용자 지시를 기다린다.
+SessionStart 훅이 `.claude/CURRENT_TASK.md`를 출력한다.
+
+- 미완료 작업이 있으면 → 상태를 보고하고 사용자 지시를 기다린다.
+- `architecture.md`나 `conventions.md`가 비어있으면 → 프로젝트 파일을 읽고 채운다.
 
 프로젝트 맥락이 필요하면:
 

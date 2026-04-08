@@ -17,8 +17,10 @@ _마지막 업데이트: 2026-04-08_
 - [x] init.sh 질문 제거 + 로컬/원격 분기 수정
 - [x] SessionStart 훅: 모든 세션으로 확장
 - [x] settings.json 항상 덮어쓰기로 변경
-- [x] analyze.sh 삭제 (Claude가 직접 읽으면 됨)
+- [x] analyze.sh 삭제
 - [x] Stop 훅 개선 (코드 변경 없으면 즉시 통과)
+- [x] README 사용법 가이드 추가
+- [x] CLAUDE.md 첫 실행 시 행동 지시 추가
 
 ## 남은 것
 

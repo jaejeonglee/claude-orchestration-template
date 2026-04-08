@@ -15,6 +15,34 @@ claude
 
 ---
 
+## 사용법
+
+### 첫 실행 (프로젝트 세팅)
+
+```
+이 프로젝트 파악해줘
+```
+
+Claude가 코드, package.json, 디렉토리 구조 등을 읽고 `architecture.md`, `conventions.md`를 채워줌.
+
+### 일상 개발
+
+```
+결제 API 추가해줘                    → Claude가 직접 구현하거나 에이전트 위임
+이 인증 로직 보안 문제 없어?          → codex-reasoner가 분석
+Fastify v5 마이그레이션 가이드 확인해줘 → gemini-researcher가 공식 문서 확인
+/new-spec payment                    → 기획 초안 템플릿 생성
+/update-task                         → CURRENT_TASK.md 갱신
+```
+
+에이전트는 Claude가 필요에 따라 자동 위임함. 직접 지정할 수도 있음.
+
+### 세션 이어가기
+
+새 세션을 열면 SessionStart 훅이 CURRENT_TASK.md를 자동 출력. 이전 작업 맥락을 바로 파악하고 이어서 작업 가능.
+
+---
+
 ## 설치되는 것
 
 ```
