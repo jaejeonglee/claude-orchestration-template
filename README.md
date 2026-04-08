@@ -8,22 +8,10 @@ Claude(오케스트레이터) + codex-reasoner(깊은 추론) + gemini-researche
 
 ## 빠른 시작
 
-### 신규 프로젝트
-
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main/scripts/init.sh)
 claude
 ```
-
-### 기존 프로젝트
-
-```bash
-bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main/scripts/init.sh)
-bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main/scripts/analyze.sh)
-claude
-```
-
-`analyze.sh`는 프로젝트 코드를 분석해서 `.claude/docs/raw-analysis.md`에 덤프하고, `claude` 실행하면 이를 기반으로 문서를 자동 채움.
 
 ---
 
