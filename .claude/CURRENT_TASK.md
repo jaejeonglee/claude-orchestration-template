@@ -6,23 +6,18 @@ _마지막 업데이트: 2026-04-08_
 
 ## 현재 작업
 
-완료 — SessionStart 훅 개선
+완료 — settings.json 덮어쓰기 정책 수정
 
 ## 완료된 것
 
-- [x] GitHub URL 수정 (ljjunh → jaejeonglee)
+- [x] GitHub URL 수정
 - [x] 마이그레이션 폴더 제거
 - [x] .ai/ → .claude/docs/ 통합
-- [x] CURRENT_TASK.md, PROGRESS.md를 .claude/ 안으로 이동
-- [x] 불필요 문서 삭제
+- [x] 문서 간소화 (10개 → 2개)
 - [x] init.sh 질문 제거 + 로컬/원격 분기 수정
-- [x] SessionStart 훅: compact만 → 모든 세션으로 확장
-- [x] CLAUDE.md: 세션 시작 시 행동 지시 추가
+- [x] SessionStart 훅: 모든 세션으로 확장
+- [x] settings.json 덮어쓰기 정책: 건너뛰기 → 항상 최신으로 덮어씀
 
 ## 남은 것
-
-(없음)
-
-## 막힌 부분
 
 (없음)
