@@ -22,7 +22,7 @@ git clone https://github.com/jaejeonglee/claude-orchestration-template
 bash claude-orchestration-template/scripts/init.sh
 ```
 
-설치 후 `.ai/architecture.md`, `.ai/conventions.md`, `.ai/docs/PROJECT.md`를 직접 작성하면 준비 완료.
+설치 후 `.claude/docs/architecture.md`, `.claude/docs/conventions.md`를 직접 작성하면 준비 완료.
 
 ---
 
@@ -35,17 +35,17 @@ bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestratio
 # 2. 프로젝트 분석
 bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main/scripts/analyze.sh)
 
-# 3. Claude 실행 — 자동으로 .ai/ 문서를 채워줌
+# 3. Claude 실행 — 자동으로 문서를 채워줌
 claude
 ```
 
 `analyze.sh`가 하는 일:
 - `package.json`, 디렉토리 구조, 라우트, DB 스키마, 환경변수, `git log` 수집
-- `.ai/docs/raw-analysis.md` 생성
-- `CURRENT_TASK.md`에 "이 정보 보고 문서 채워줘" 지시 작성
+- `.claude/docs/raw-analysis.md` 생성
+- `.claude/CURRENT_TASK.md`에 "이 정보 보고 문서 채워줘" 지시 작성
 
 `claude` 실행하면:
-- `raw-analysis.md` 읽고 `.ai/` 문서 자동 채움
+- `raw-analysis.md` 읽고 문서 자동 채움
 - `raw-analysis.md` 삭제
 - 완료 보고
 
@@ -58,31 +58,23 @@ claude
 ├── agents/
 │   ├── codex-reasoner.md     # 깊은 추론 전문가 (Claude 기반)
 │   └── gemini-researcher.md  # 리서치·기획 전문가 (Gemini API)
+├── docs/
+│   ├── architecture.md       # 시스템 구조 (프로젝트별 작성)
+│   ├── conventions.md        # 구현 규칙 (프로젝트별 작성)
+│   └── specs/                # 기획 초안 (임시, 완료 후 삭제)
 ├── scripts/
 │   └── call-gemini.sh        # Gemini API 호출 스크립트
 ├── settings.json             # Hooks (ESLint, Stop 체크, compact 복구)
-└── skills/
-    ├── new-spec/             # /new-spec 커맨드
-    └── update-task/          # /update-task 커맨드
-
-.ai/
-├── README.md                 # AI 진입점, 문서 맵
-├── agents.md                 # 역할 분담, 라우팅, 워크플로우
-├── architecture.md           # 시스템 구조 (프로젝트별 작성)
-├── conventions.md            # 구현 규칙 (프로젝트별 작성)
-├── context-reset.md          # compact 이후 복구 체크리스트
-└── docs/
-    ├── PROJECT.md            # 현재 상태 문서
-    ├── TODO.md               # 미완료 항목
-    ├── API_DOCS.md           # API 계약
-    ├── specs/                # 기획 초안 (임시, 완료 후 삭제)
-    └── migrations/           # 미적용 마이그레이션 (임시, 완료 후 삭제)
+├── skills/
+│   ├── new-spec/             # /new-spec 커맨드
+│   └── update-task/          # /update-task 커맨드
+├── CURRENT_TASK.md           # AI 핸드오프 노트
+└── PROGRESS.md               # 전체 진행 기록
 
 CLAUDE.md                     # 세션 시작 시 자동 로드
-CURRENT_TASK.md               # AI 핸드오프 노트
 ```
 
-> `.claude`, `.ai`, `CLAUDE.md`, `CURRENT_TASK.md`는 `.gitignore`에 자동 추가됨 (로컬 전용)
+> `.claude`와 `CLAUDE.md`는 `.gitignore`에 자동 추가됨 (로컬 전용)
 
 ---
 
@@ -124,7 +116,7 @@ Claude           → 문서 동기화 + draft 삭제
 |---|---|
 | `PostToolUse (Edit\|Write)` | JS/TS 파일 수정 시 ESLint auto-fix |
 | `Stop` | 작업 완료 시 문서 동기화·에러 핸들링 체크 |
-| `SessionStart (compact)` | 컨텍스트 압축 이후 자동으로 context-reset + CURRENT_TASK 출력 |
+| `SessionStart (compact)` | 컨텍스트 압축 이후 자동으로 복구 안내 + CURRENT_TASK 출력 |
 
 ---
 
@@ -141,8 +133,7 @@ Claude           → 문서 동기화 + draft 삭제
 
 설치 후 아래 파일을 프로젝트에 맞게 수정:
 
-1. `.ai/architecture.md` — 시스템 구조, 기술 스택, 데이터 흐름
-2. `.ai/conventions.md` — 코딩 규칙, 도메인 규칙, 구현 게이트
-3. `.ai/docs/PROJECT.md` — 현재 상태 기록
+1. `.claude/docs/architecture.md` — 시스템 구조, 기술 스택, 데이터 흐름
+2. `.claude/docs/conventions.md` — 코딩 규칙, 도메인 규칙, 구현 게이트
 
 도메인 특화 skill이 필요하면 `.claude/skills/<이름>/SKILL.md` 추가.

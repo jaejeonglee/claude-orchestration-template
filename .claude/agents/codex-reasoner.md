@@ -14,9 +14,9 @@ model: inherit
 
 ## 작업 시작 절차
 
-1. `.ai/architecture.md` 읽기 (시스템 구조 파악)
-2. `.ai/conventions.md` 읽기 (프로젝트 규칙 확인)
-3. `CURRENT_TASK.md` 읽기 (현재 작업 맥락 파악)
+1. `.claude/docs/architecture.md` 읽기 (시스템 구조 파악)
+2. `.claude/docs/conventions.md` 읽기 (프로젝트 규칙 확인)
+3. `.claude/CURRENT_TASK.md` 읽기 (현재 작업 맥락 파악)
 4. 요청받은 파일/코드 분석 시작
 
 ## 분석 원칙
