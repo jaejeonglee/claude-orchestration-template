@@ -6,32 +6,25 @@ _마지막 업데이트: 2026-04-08_
 
 ## 현재 작업
 
-**템플릿 구조 리팩터링** — .ai/ 폴더 제거, .claude/ 통합, 문서 간소화
+템플릿 개선 완료 — 커밋 대기
 
 ## 완료된 것
 
 - [x] GitHub URL 수정 (ljjunh → jaejeonglee)
 - [x] 마이그레이션 폴더 제거
 - [x] .ai/ → .claude/docs/ 통합
-- [x] CURRENT_TASK.md 루트 → .claude/ 이동
-- [x] PROGRESS.md 신규 추가
-- [x] agents.md 핵심 내용 CLAUDE.md에 흡수
-- [x] 불필요 문서 삭제 (README.md, agents.md, context-reset.md, PROJECT.md, TODO.md, API_DOCS.md)
-- [x] 에이전트/스킬/settings.json 경로 업데이트
-- [x] init.sh, analyze.sh 새 구조 반영
-- [x] README.md 재작성
-- [x] .gitignore.template 간소화
-- [x] init.sh 테스트 통과
+- [x] CURRENT_TASK.md, PROGRESS.md를 .claude/ 안으로 이동
+- [x] 불필요 문서 삭제 (agents.md, context-reset.md 등)
+- [x] init.sh 질문 제거 (프로젝트명 디렉토리명 자동 치환)
+- [x] init.sh 로컬/원격 분기 수정
+- [x] analyze.sh init 체크 개선 (settings.json 기준)
+- [x] README.md 사용법 단순화
+- [x] 전체 경로 참조 업데이트 + 테스트 통과
 
 ## 남은 것
 
-- [ ] 커밋 + main 머지 + push
+(없음)
 
 ## 막힌 부분
 
-(현재 없음)
-
-## 다음 작업 시작 시 읽어야 할 것
-
-- `.claude/CURRENT_TASK.md` (이 파일)
-- `CLAUDE.md.template`
+(없음)

@@ -11,43 +11,19 @@ Claude(오케스트레이터) + codex-reasoner(깊은 추론) + gemini-researche
 ### 신규 프로젝트
 
 ```bash
-# 프로젝트 루트에서 실행
 bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main/scripts/init.sh)
-```
-
-또는 클론 후:
-
-```bash
-git clone https://github.com/jaejeonglee/claude-orchestration-template
-bash claude-orchestration-template/scripts/init.sh
-```
-
-설치 후 `.claude/docs/architecture.md`, `.claude/docs/conventions.md`를 직접 작성하면 준비 완료.
-
----
-
-### 기존 프로젝트 (이미 코드가 있는 경우)
-
-```bash
-# 1. 구조 설치
-bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main/scripts/init.sh)
-
-# 2. 프로젝트 분석
-bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main/scripts/analyze.sh)
-
-# 3. Claude 실행 — 자동으로 문서를 채워줌
 claude
 ```
 
-`analyze.sh`가 하는 일:
-- `package.json`, 디렉토리 구조, 라우트, DB 스키마, 환경변수, `git log` 수집
-- `.claude/docs/raw-analysis.md` 생성
-- `.claude/CURRENT_TASK.md`에 "이 정보 보고 문서 채워줘" 지시 작성
+### 기존 프로젝트
 
-`claude` 실행하면:
-- `raw-analysis.md` 읽고 문서 자동 채움
-- `raw-analysis.md` 삭제
-- 완료 보고
+```bash
+bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main/scripts/init.sh)
+bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main/scripts/analyze.sh)
+claude
+```
+
+`analyze.sh`는 프로젝트 코드를 분석해서 `.claude/docs/raw-analysis.md`에 덤프하고, `claude` 실행하면 이를 기반으로 문서를 자동 채움.
 
 ---
 
