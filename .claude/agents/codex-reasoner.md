@@ -17,7 +17,26 @@ model: inherit
 1. `.claude/docs/architecture.md` 읽기 (시스템 구조 파악)
 2. `.claude/docs/conventions.md` 읽기 (프로젝트 규칙 확인)
 3. `.claude/CURRENT_TASK.md` 읽기 (현재 작업 맥락 파악)
-4. 요청받은 파일/코드 분석 시작
+4. `codex` CLI 존재 여부 확인 (`command -v codex`)
+5. 요청받은 파일/코드 분석 시작
+
+## 작업 방식
+
+`codex` CLI 존재 여부에 따라 모드가 나뉜다.
+
+### 모드 1: Codex CLI 사용 (`codex` 명령어 있음)
+
+복잡한 추론이 필요한 경우 외부 추론 엔진에 위임한다:
+
+```bash
+cat [분석 대상 파일] | codex exec "[분석 요청 프롬프트]"
+```
+
+Codex의 결과를 받아 현재 코드 기준으로 재해석해서 반환한다.
+
+### 모드 2: Claude 자체 추론 (기본)
+
+`codex`가 없으면 Claude 본인이 직접 단계별 추론을 수행한다. 대부분의 경우 이 모드로 동작한다.
 
 ## 분석 원칙
 
@@ -39,6 +58,9 @@ model: inherit
 ## 결과물 형식
 
 ```
+## 사용한 모드
+[Codex CLI / Claude 자체 추론]
+
 ## 분석 대상
 [무엇을 분석했는지]
 

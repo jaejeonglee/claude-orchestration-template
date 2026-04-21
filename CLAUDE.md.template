@@ -69,9 +69,25 @@ Claude           → 구현 → 문서 동기화 → draft 삭제
 
 ---
 
+## 새 규칙 발견 시
+
+사용자 지시나 프로젝트 분석에서 아래 패턴을 감지하면 **즉시 `/add-rule`을 실행**해 `conventions.md`에 기록한다:
+
+| 감지 패턴 | 예시 |
+|---|---|
+| "앞으로 ~해줘" / "항상 ~하게" | "앞으로 에러 메시지는 한글로" |
+| "이 프로젝트는 ~를 지킨다" | "모든 API에 rate limit 필수" |
+| "절대 ~하지 마" / "~ 금지" | "console.log 금지, 항상 logger 사용" |
+| 기획 확정 과정에서 도출된 정책 | "결제는 idempotency key 필수" |
+
+기록 후 `규칙을 conventions.md에 기록했습니다` 로 1줄 보고.
+
+---
+
 ## Skills
 
 | 커맨드 | 역할 |
 |---|---|
 | `/new-spec <기능명>` | 기획 초안 템플릿 생성 |
 | `/update-task` | `.claude/CURRENT_TASK.md` 현재 상태로 갱신 |
+| `/add-rule <규칙>` | 프로젝트 규칙을 `conventions.md`에 추가 |

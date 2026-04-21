@@ -49,6 +49,7 @@ Claude가 프로젝트 코드를 분석하여 `architecture.md`와 `conventions.
 |---|---|
 | `/new-spec <기능명>` | 기획 초안 템플릿 생성 |
 | `/update-task` | 현재 작업 상태 갱신 |
+| `/add-rule <규칙>` | 프로젝트 규칙을 `conventions.md`에 추가 |
 
 ### 4. 세션 이어가기
 
@@ -91,5 +92,14 @@ Claude             →  구현 → 문서 동기화 → 초안 삭제
 
 | 변수 | 필수 여부 | 설명 |
 |---|---|---|
-| `GEMINI_API_KEY` | gemini-researcher 사용 시 필수 | Google AI Studio에서 발급 |
+| `GEMINI_API_KEY` | 선택 | 있으면 Gemini API 사용, 없으면 WebSearch/WebFetch로 폴백 |
 | `GEMINI_MODEL` | 선택 | 기본값 `gemini-2.5-pro` |
+
+### 외부 도구 옵션
+
+| 도구 | 동작 |
+|---|---|
+| `GEMINI_API_KEY` 환경변수 | gemini-researcher가 Gemini API 사용 (긴 컨텍스트) |
+| `codex` CLI | codex-reasoner가 Codex CLI 사용 (외부 추론 엔진) |
+
+둘 다 **선택**이다. 없으면 Claude가 WebSearch/자체 추론으로 동일한 역할을 수행한다.

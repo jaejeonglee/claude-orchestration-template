@@ -66,6 +66,7 @@ mkdir -p "$TARGET_DIR/.claude/agents"
 mkdir -p "$TARGET_DIR/.claude/scripts"
 mkdir -p "$TARGET_DIR/.claude/skills/new-spec"
 mkdir -p "$TARGET_DIR/.claude/skills/update-task"
+mkdir -p "$TARGET_DIR/.claude/skills/add-rule"
 mkdir -p "$TARGET_DIR/.claude/docs/specs"
 
 # [2/4] 에이전트·스킬 (항상 최신으로 덮어씀)
@@ -76,6 +77,7 @@ copy_file ".claude/scripts/call-gemini.sh" "$TARGET_DIR/.claude/scripts/call-gem
 chmod +x "$TARGET_DIR/.claude/scripts/call-gemini.sh"
 copy_file ".claude/skills/new-spec/SKILL.md" "$TARGET_DIR/.claude/skills/new-spec/SKILL.md"
 copy_file ".claude/skills/update-task/SKILL.md" "$TARGET_DIR/.claude/skills/update-task/SKILL.md"
+copy_file ".claude/skills/add-rule/SKILL.md" "$TARGET_DIR/.claude/skills/add-rule/SKILL.md"
 copy_file ".claude/settings.json" "$TARGET_DIR/.claude/settings.json"
 
 # [3/4] 문서 (이미 있으면 건너뜀)
