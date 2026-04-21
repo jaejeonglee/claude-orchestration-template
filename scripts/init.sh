@@ -86,7 +86,52 @@ copy_if_not_exists ".claude/docs/architecture.md" "$TARGET_DIR/.claude/docs/arch
 copy_if_not_exists ".claude/docs/conventions.md" "$TARGET_DIR/.claude/docs/conventions.md"
 
 if [ -f "$TARGET_DIR/CLAUDE.md" ]; then
-  echo "  건너뜀: CLAUDE.md"
+  # 기존 CLAUDE.md가 있으면 누락된 섹션만 추가 (멱등적 병합)
+  APPENDED=0
+
+  # 1. Skills 테이블에 /add-rule 추가 (섹션 추가 전에 먼저 — 중복 매칭 방지)
+  if ! grep -qE '^\|.*\/add-rule' "$TARGET_DIR/CLAUDE.md"; then
+    if grep -q "/update-task" "$TARGET_DIR/CLAUDE.md"; then
+      awk '
+        /\/update-task.*CURRENT_TASK/ {
+          print;
+          print "| `/add-rule <규칙>` | 프로젝트 규칙을 `conventions.md`에 추가 |";
+          next
+        }
+        { print }
+      ' "$TARGET_DIR/CLAUDE.md" > "$TARGET_DIR/CLAUDE.md.tmp" && \
+        mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
+      APPENDED=1
+    fi
+  fi
+
+  # 2. "새 규칙 발견 시" 섹션 추가
+  if ! grep -q "## 새 규칙 발견 시" "$TARGET_DIR/CLAUDE.md"; then
+    cat >> "$TARGET_DIR/CLAUDE.md" << 'RULE_SECTION'
+
+---
+
+## 새 규칙 발견 시
+
+사용자 지시나 프로젝트 분석에서 아래 패턴을 감지하면 **즉시 `/add-rule`을 실행**해 `conventions.md`에 기록한다:
+
+| 감지 패턴 | 예시 |
+|---|---|
+| "앞으로 ~해줘" / "항상 ~하게" | "앞으로 에러 메시지는 한글로" |
+| "이 프로젝트는 ~를 지킨다" | "모든 API에 rate limit 필수" |
+| "절대 ~하지 마" / "~ 금지" | "console.log 금지, 항상 logger 사용" |
+| 기획 확정 과정에서 도출된 정책 | "결제는 idempotency key 필수" |
+
+기록 후 `규칙을 conventions.md에 기록했습니다` 로 1줄 보고.
+RULE_SECTION
+    APPENDED=1
+  fi
+
+  if [ $APPENDED -eq 1 ]; then
+    echo "  업데이트: CLAUDE.md (누락 섹션 추가)"
+  else
+    echo "  건너뜀: CLAUDE.md (최신 상태)"
+  fi
 else
   if [ -n "$TEMPLATE_LOCAL" ]; then
     sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
