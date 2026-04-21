@@ -1,6 +1,6 @@
 # Current Task
 
-_마지막 업데이트: 2026-04-10_
+_마지막 업데이트: 2026-04-21_
 
 ---
 
@@ -22,6 +22,10 @@ _마지막 업데이트: 2026-04-10_
 - [x] CLAUDE.md 첫 실행 시 행동 지시 추가
 - [x] permissions.deny 추가 (.env, *.pem, *.key, credentials, secret)
 - [x] README 전면 개편 (전문적 톤 + 구조 간소화)
+- [x] gemini-researcher 조건부 분기 (GEMINI_API_KEY 없으면 WebSearch 폴백)
+- [x] codex-reasoner 조건부 분기 (codex CLI 없으면 Claude 자체 추론)
+- [x] /add-rule 스킬 추가 (프로젝트 규칙을 conventions.md에 기록)
+- [x] CLAUDE.md에 규칙 자동 감지 지시 추가
 
 ## 남은 것
 
