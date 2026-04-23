@@ -1,100 +1,106 @@
 # Claude Orchestration Template
 
-Claude Code 프로젝트에 AI 오케스트레이션 구조를 설치하는 템플릿입니다.
+Claude Code를 더 체계적으로 쓰기 위한 설정 템플릿.
 
-설치 후 Claude는 세 개의 에이전트로 역할을 분리하여 작업합니다.
+설치하면 Claude 혼자 일하지 않고, 역할을 나눠서 일합니다.
 
-| 에이전트 | 역할 |
-|---|---|
-| **Claude** | 오케스트레이터 — 코드 작성, 흐름 조율, 결과 통합 |
-| **codex-reasoner** | 심층 추론 — 로직 검증, 보안 분석, 버그 근본원인 분석 |
-| **gemini-researcher** | 리서치 — 공식 문서 확인, 최신 API 스펙, 기획 초안 작성 |
+- **Claude** — 코드 작성하는 사람
+- **gemini-researcher** — 공식 문서 찾아오는 사람
+- **codex-reasoner** — 로직·보안 검증하는 사람
+
+> 복잡한 작업을 한 명한테 다 시키면 품질이 들쭉날쭉합니다. 역할을 나누면 훨씬 안정적입니다.
 
 ---
 
 ## 설치
 
+프로젝트 폴더에서 아래 한 줄 실행:
+
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-orchestration-template/main/scripts/init.sh)
 ```
 
-프로젝트 루트에 `.claude/` 디렉토리와 `CLAUDE.md`가 생성되며, 두 항목은 `.gitignore`에 자동 추가되어 로컬에서만 유지됩니다.
+설정 파일은 `.claude/` 폴더에 들어가고, `.gitignore`에 자동으로 추가됩니다 (= Git에 안 올라감, 내 컴퓨터에만 있음).
 
 ---
 
-## 사용
+## 쓰는 법
 
-### 1. 최초 실행
+### 처음 한 번
 
 ```bash
 claude
 > 이 프로젝트 파악해줘
 ```
 
-Claude가 프로젝트 코드를 분석하여 `architecture.md`와 `conventions.md`를 자동으로 작성합니다.
+Claude가 코드를 읽고 프로젝트 문서를 자동으로 정리해줍니다.
 
-### 2. 일상 개발
+### 평소
 
-평소처럼 자연어로 요청하면 Claude가 작업 성격에 맞는 에이전트에 자동 위임합니다.
+그냥 평소처럼 말하면 됩니다. Claude가 알아서 적절한 역할로 넘깁니다.
 
-| 요청 예시 | 처리 주체 |
+```
+"결제 API 추가해줘"                  → Claude가 직접 구현
+"이 인증 로직 보안 문제 있어?"        → codex-reasoner가 분석
+"Fastify v5 마이그레이션 방법 찾아줘"  → gemini-researcher가 조사
+```
+
+### 편리한 커맨드
+
+| 입력 | 동작 |
 |---|---|
-| `결제 API를 추가해줘` | Claude |
-| `이 인증 로직에 보안 문제가 있는지 분석해줘` | codex-reasoner |
-| `Fastify v5 마이그레이션 가이드를 확인해줘` | gemini-researcher |
+| `/new-spec 결제` | "결제" 기능 기획 초안 만들기 |
+| `/update-task` | 지금 뭐 하고 있는지 기록 |
+| `/add-rule 에러 메시지는 한글로` | 프로젝트 규칙 추가 |
 
-### 3. 슬래시 커맨드
+### 세션이 끊겨도 괜찮음
 
-| 커맨드 | 역할 |
-|---|---|
-| `/new-spec <기능명>` | 기획 초안 템플릿 생성 |
-| `/update-task` | 현재 작업 상태 갱신 |
-| `/add-rule <규칙>` | 프로젝트 규칙을 `conventions.md`에 추가 |
-
-### 4. 세션 이어가기
-
-새 세션을 시작하면 SessionStart 훅이 `CURRENT_TASK.md`와 최근 커밋 내역을 자동으로 출력합니다. 이전 맥락을 그대로 이어 작업할 수 있습니다.
+새로 `claude` 실행하면 이전에 뭐 하고 있었는지 자동으로 보여줍니다.
 
 ---
 
-## 작동 방식
-
-### 기능 개발 워크플로우
+## 일하는 순서 (기능 개발할 때)
 
 ```
-gemini-researcher  →  기획 초안 작성
-codex-reasoner     →  현재 코드 기준 리뷰
-사람               →  확정
-Claude             →  구현 → 문서 동기화 → 초안 삭제
+1. gemini-researcher가 기획 초안을 씀
+2. codex-reasoner가 "이게 지금 코드랑 맞나?" 검토
+3. 사람이 확인하고 OK
+4. Claude가 구현
 ```
 
-확정되지 않은 초안은 구현으로 이어지지 않습니다.
+중요: **사람이 OK 안 한 기획은 절대 코드로 안 들어갑니다.**
 
-### 자동화 Hooks
+---
 
-| 시점 | 동작 |
+## 자동으로 해주는 것
+
+| 상황 | 동작 |
 |---|---|
-| 세션 시작 | `CURRENT_TASK.md` 및 최근 커밋 출력 |
-| 파일 수정 (Edit/Write) | JS/TS 파일에 ESLint auto-fix 적용 |
-| 작업 완료 (Stop) | 문서 동기화 및 에러 핸들링 누락 검증 |
+| `claude` 실행할 때 | 이전 작업 내용 자동 출력 |
+| JS/TS 파일 저장할 때 | ESLint 자동 수정 |
+| 작업 끝낼 때 | "문서 업데이트 안 했지?" 검증 |
 
-### 보안
+---
 
-민감 파일에 대한 읽기 권한을 도구 레벨에서 차단합니다.
+## 보안
+
+이런 파일은 Claude가 읽을 수 없도록 막혀있습니다:
 
 - `.env`, `.env.*`
 - `*.pem`, `*.key`
 - `credentials*`, `*secret*`
 
+말로만 "읽지 마"가 아니라 **실제로 차단**됩니다.
+
 ---
 
-## 환경 변수
+## 환경 변수 (선택)
 
-| 변수 | 필수 여부 | 설명 |
-|---|---|---|
-| `GEMINI_API_KEY` | 선택 | gemini-researcher가 Gemini API 사용 (없으면 WebSearch 폴백) |
-| `GEMINI_MODEL` | 선택 | 기본값 `gemini-2.5-pro` |
-| `OPENAI_API_KEY` | 선택 | codex-reasoner가 OpenAI API 사용 (없으면 Claude 자체 추론) |
-| `OPENAI_MODEL` | 선택 | 기본값 `gpt-5-codex` |
+외부 AI를 같이 쓸 수 있습니다. **없어도 Claude 혼자 다 할 수 있어요.**
 
-외부 API 키는 모두 **선택**입니다. 없어도 Claude가 WebSearch/자체 추론으로 동일한 역할을 수행합니다.
+| 변수 | 효과 |
+|---|---|
+| `GEMINI_API_KEY` | 공식 문서 조사할 때 Gemini 사용 |
+| `OPENAI_API_KEY` | 로직/보안 분석할 때 OpenAI 사용 |
+
+없으면? Claude가 WebSearch나 자체 추론으로 대신 처리합니다.
