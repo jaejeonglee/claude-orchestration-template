@@ -69,6 +69,20 @@ Claude           → 구현 → 문서 동기화 → draft 삭제
 
 ---
 
+## 아키텍처 변경 감지 시
+
+다음 중 하나라도 발생하면 `/update-architecture`를 실행해 `architecture.md`를 갱신한다:
+
+- 의존성 매니페스트 변경 (`package.json`, `go.mod`, `requirements.txt`, `Cargo.toml`, `pubspec.yaml` 등)
+- 새 top-level 디렉토리 생성 (src/, app/, pkg/ 등의 바로 아래)
+- 주요 설정 파일 추가/변경 (`tsconfig`, `*.config.*`, `Dockerfile` 등)
+- 데이터 스키마 변경 (migration, `schema.prisma`, `*.proto`, `*.sql` 등)
+- 외부 API / 서비스 통합 추가·제거
+
+버그 수정, 리팩터링, 로직 변경만으로는 갱신하지 않는다.
+
+---
+
 ## 새 규칙 발견 시
 
 사용자 지시나 프로젝트 분석에서 아래 패턴을 감지하면 **즉시 `/add-rule`을 실행**해 `conventions.md`에 기록한다:
@@ -91,3 +105,4 @@ Claude           → 구현 → 문서 동기화 → draft 삭제
 | `/new-spec <기능명>` | 기획 초안 템플릿 생성 |
 | `/update-task` | `.claude/CURRENT_TASK.md` 현재 상태로 갱신 |
 | `/add-rule <규칙>` | 프로젝트 규칙을 `conventions.md`에 추가 |
+| `/update-architecture` | `architecture.md`를 현재 코드 기준으로 생성/갱신 |

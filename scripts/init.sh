@@ -67,6 +67,7 @@ mkdir -p "$TARGET_DIR/.claude/scripts"
 mkdir -p "$TARGET_DIR/.claude/skills/new-spec"
 mkdir -p "$TARGET_DIR/.claude/skills/update-task"
 mkdir -p "$TARGET_DIR/.claude/skills/add-rule"
+mkdir -p "$TARGET_DIR/.claude/skills/update-architecture"
 mkdir -p "$TARGET_DIR/.claude/docs/specs"
 
 # [2/4] 에이전트·스킬 (항상 최신으로 덮어씀)
@@ -80,6 +81,7 @@ chmod +x "$TARGET_DIR/.claude/scripts/call-codex.sh"
 copy_file ".claude/skills/new-spec/SKILL.md" "$TARGET_DIR/.claude/skills/new-spec/SKILL.md"
 copy_file ".claude/skills/update-task/SKILL.md" "$TARGET_DIR/.claude/skills/update-task/SKILL.md"
 copy_file ".claude/skills/add-rule/SKILL.md" "$TARGET_DIR/.claude/skills/add-rule/SKILL.md"
+copy_file ".claude/skills/update-architecture/SKILL.md" "$TARGET_DIR/.claude/skills/update-architecture/SKILL.md"
 copy_file ".claude/settings.json" "$TARGET_DIR/.claude/settings.json"
 
 # [3/4] 문서 (이미 있으면 건너뜀)
@@ -105,6 +107,43 @@ if [ -f "$TARGET_DIR/CLAUDE.md" ]; then
         mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
       APPENDED=1
     fi
+  fi
+
+  # 1-b. Skills 테이블에 /update-architecture 추가
+  if ! grep -qE '^\|.*\/update-architecture' "$TARGET_DIR/CLAUDE.md"; then
+    if grep -q "/add-rule" "$TARGET_DIR/CLAUDE.md"; then
+      awk '
+        /\/add-rule.*conventions/ {
+          print;
+          print "| `/update-architecture` | `architecture.md`를 현재 코드 기준으로 생성/갱신 |";
+          next
+        }
+        { print }
+      ' "$TARGET_DIR/CLAUDE.md" > "$TARGET_DIR/CLAUDE.md.tmp" && \
+        mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
+      APPENDED=1
+    fi
+  fi
+
+  # 2-a. "아키텍처 변경 감지 시" 섹션 추가
+  if ! grep -q "## 아키텍처 변경 감지 시" "$TARGET_DIR/CLAUDE.md"; then
+    cat >> "$TARGET_DIR/CLAUDE.md" << 'ARCH_SECTION'
+
+---
+
+## 아키텍처 변경 감지 시
+
+다음 중 하나라도 발생하면 `/update-architecture`를 실행해 `architecture.md`를 갱신한다:
+
+- 의존성 매니페스트 변경 (`package.json`, `go.mod`, `requirements.txt`, `Cargo.toml`, `pubspec.yaml` 등)
+- 새 top-level 디렉토리 생성 (src/, app/, pkg/ 등의 바로 아래)
+- 주요 설정 파일 추가/변경 (`tsconfig`, `*.config.*`, `Dockerfile` 등)
+- 데이터 스키마 변경 (migration, `schema.prisma`, `*.proto`, `*.sql` 등)
+- 외부 API / 서비스 통합 추가·제거
+
+버그 수정, 리팩터링, 로직 변경만으로는 갱신하지 않는다.
+ARCH_SECTION
+    APPENDED=1
   fi
 
   # 2. "새 규칙 발견 시" 섹션 추가
