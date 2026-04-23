@@ -1,6 +1,6 @@
 # Current Task
 
-_마지막 업데이트: 2026-04-21_
+_마지막 업데이트: 2026-04-23_
 
 ---
 
@@ -28,6 +28,11 @@ _마지막 업데이트: 2026-04-21_
 - [x] CLAUDE.md에 규칙 자동 감지 지시 추가
 - [x] 기존 사용자용 멱등적 CLAUDE.md 병합 (init.sh 재실행 지원)
 - [x] codex-reasoner를 CLI 방식 → OPENAI_API_KEY 방식으로 전환 (Gemini와 대칭)
+- [x] README 쉽게 다시 작성 (대화체, 비유 사용)
+- [x] v1.0.0 태그 + GitHub push 완료
+- [x] architecture.md 프로젝트 타입 무관하게 재설계 (빈 템플릿)
+- [x] /update-architecture 스킬 추가 (6가지 프로젝트 유형 자동 감지)
+- [x] CLAUDE.md에 "아키텍처 변경 감지 시" 트리거 조건 추가
 
 ## 남은 것
 
