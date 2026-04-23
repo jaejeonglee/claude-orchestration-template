@@ -26,6 +26,8 @@ _마지막 업데이트: 2026-04-21_
 - [x] codex-reasoner 조건부 분기 (codex CLI 없으면 Claude 자체 추론)
 - [x] /add-rule 스킬 추가 (프로젝트 규칙을 conventions.md에 기록)
 - [x] CLAUDE.md에 규칙 자동 감지 지시 추가
+- [x] 기존 사용자용 멱등적 CLAUDE.md 병합 (init.sh 재실행 지원)
+- [x] codex-reasoner를 CLI 방식 → OPENAI_API_KEY 방식으로 전환 (Gemini와 대칭)
 
 ## 남은 것
 
