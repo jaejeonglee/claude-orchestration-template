@@ -22,6 +22,14 @@ bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-template/mai
 
 설정 파일은 `.claude/`·`.codex/` 폴더와 `AGENTS.md`·`CLAUDE.md`로 들어가고, `.gitignore`에 자동으로 추가됩니다 (= Git에 안 올라감, 내 컴퓨터에만 있음).
 
+### 템플릿 개발 검증
+
+훅 계약과 기존 설치 마이그레이션은 독립 fixture로 검증합니다.
+
+```bash
+bash tests/hooks-test.sh
+```
+
 ### Claude Code와 Codex 함께 쓰기
 
 규칙 원본은 `AGENTS.md` 하나입니다. Claude는 `CLAUDE.md`가 이걸 import하고, Codex는 `AGENTS.md`를 직접 읽습니다. 훅 로직(`.claude/hooks/*.sh`)도 양쪽이 같은 스크립트를 호출하므로 **위험 명령 차단·저장 시 포맷팅·세션 시작 컨텍스트가 동일하게 동작**합니다.

@@ -3,7 +3,7 @@
 #
 # 입력: 이벤트 JSON (stdin)
 #   Claude: {"tool_name":"Bash","tool_input":{"command":"git push --force"}}
-#   Codex : {"tool_name":"shell","tool_input":{"command":["git","push","--force"]}}
+#   Codex : {"tool_name":"Bash","tool_input":{"command":"git push --force"}}
 #   → command가 문자열이든 배열이든 동일하게 처리한다.
 #
 # 종료 코드: 0 = 통과, 2 = 차단 (사유는 stderr)

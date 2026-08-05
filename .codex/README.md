@@ -11,6 +11,8 @@ Claude와 Codex가 같은 스크립트를 호출하므로 위험 명령 차단·
 ```
 - 현재 릴리스에서 훅은 기본 활성이다.
 - 저장소가 trusted 상태여야 프로젝트 훅이 로드된다.
+- 비관리 훅은 정의별로 검토·신뢰해야 실행된다. 새로 설치하거나 훅이 바뀌면
+  Codex CLI의 `/hooks`에서 현재 hash를 확인하고 승인한다.
 - 사용자/조직 설정에서 비활성화되어 있으면 동작하지 않는다:
     [features]
     hooks = false
@@ -23,13 +25,22 @@ Claude와 Codex가 같은 스크립트를 호출하므로 위험 명령 차단·
 
 ## 설계 노트
 
-**matcher를 지정하지 않는다.** 도구 이름(`shell` / `local_shell` / `apply_patch` 등)이
-버전에 따라 다를 수 있어서, 매칭은 훅 스크립트가 입력 JSON을 보고 스스로 판단한다.
+Codex가 보장하는 canonical matcher를 사용한다.
 
-- `pre-tool-use.sh` — `command` 필드가 없으면 통과 (셸 호출이 아님)
-- `post-tool-use.sh` — `file_path`/`path` 계열이 없으면 통과
+- `PreToolUse: ^Bash$` — 셸 명령만 위험 명령 검사 대상으로 제한한다.
+- `PostToolUse: Edit|Write` — `apply_patch` 계열 파일 수정만 포맷 대상으로 제한한다.
+- `SessionStart` / `Stop` — 이벤트 전체에 적용한다.
 
-덕분에 도구명이 바뀌어도 설정을 고칠 필요가 없다.
+`apply_patch`도 `tool_input.command`를 사용하므로 matcher 없이 PreToolUse를 실행하면 패치 본문을
+셸 명령으로 오인할 수 있다. PostToolUse도 matcher가 없으면 읽기 도구의 `path`를 포맷해 버릴 수
+있으므로 matcher를 제거하지 않는다.
+
+훅 command는 세션 `cwd`가 아니라 Git root에서 스크립트를 찾는다. 프로젝트 하위 디렉토리에서
+Codex를 시작해도 동일하게 동작한다.
+
+이 어댑터의 검증 범위는 POSIX Bash 환경(macOS/Linux)이다. WSL에서는 WSL 내부의 Codex를 사용한다.
+Native Windows용 `commandWindows`는 셸별 중첩 quoting을 동일하게 보장할 수 없어 제공하지 않는다.
+Windows 지원이 필요하면 해당 환경에서 별도 어댑터와 계약 테스트를 추가해야 한다.
 
 ## Claude와의 알려진 비대칭
 

@@ -35,12 +35,17 @@ else
   NEEDS_JOURNAL=1
 fi
 
-echo '=== 종료 전 점검 ==='
-echo '- 커밋되지 않은 변경이 있습니다:'
-printf '%s\n' "$DIRTY" | head -10
+MESSAGE=$(printf '%s\n' \
+  '=== 종료 전 점검 ===' \
+  '- 커밋되지 않은 변경이 있습니다:' \
+  "$(printf '%s\n' "$DIRTY" | head -10)")
 if [ "$NEEDS_JOURNAL" -eq 1 ]; then
-  echo '- 변경 이후 .claude/JOURNAL.md가 갱신되지 않았습니다. 작업 단위가 끝났다면 시각과 함께 기록하세요.'
+  MESSAGE=$(printf '%s\n%s' "$MESSAGE" '- 변경 이후 .claude/JOURNAL.md가 갱신되지 않았습니다. 작업 단위가 끝났다면 시각과 함께 기록하세요.')
 fi
-echo '- 코드 로직을 바꿨다면 관련 테스트 실행 결과를 보고했는지 확인하세요.'
+MESSAGE=$(printf '%s\n%s' "$MESSAGE" '- 코드 로직을 바꿨다면 관련 테스트 실행 결과를 보고했는지 확인하세요.')
+
+# Codex Stop 훅은 exit 0에서 stdout이 있으면 JSON이어야 한다.
+command -v jq >/dev/null 2>&1 || exit 0
+jq -n --arg systemMessage "$MESSAGE" '{continue: true, systemMessage: $systemMessage}'
 
 exit 0

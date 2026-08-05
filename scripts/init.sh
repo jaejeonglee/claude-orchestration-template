@@ -135,6 +135,79 @@ if [ -f "$RULES_FILE" ]; then
   # 기존 AGENTS.md가 있으면 누락된 섹션만 추가 (멱등적 병합)
   APPENDED=0
 
+  # 구버전 정리: Claude 전용 워크플로우 표현을 공용 표현으로 교체
+  if grep -qF '깊은 검증이나 대량 병렬 작업이 필요하면 Claude Code의 서브에이전트(Task)로 격리된 컨텍스트에서 처리한다' "$RULES_FILE"; then
+    sed 's/깊은 검증이나 대량 병렬 작업이 필요하면 Claude Code의 서브에이전트(Task)로 격리된 컨텍스트에서 처리한다/깊은 검증이나 대량 병렬 작업이 필요하면, 현재 에이전트 환경이 지원하는 격리된 서브에이전트로 처리한다/' \
+      "$RULES_FILE" > "$RULES_FILE.tmp" && mv "$RULES_FILE.tmp" "$RULES_FILE"
+    echo "  정리: Claude 전용 서브에이전트 표현을 공용 표현으로 교체"
+    APPENDED=1
+  fi
+
+  # 구버전 Skills 섹션에 비슬래시 환경용 SKILL.md 라우팅 추가
+  if ! grep -qF '각 절차의 상세 단계는 `.claude/skills/<이름>/SKILL.md`에 있다.' "$RULES_FILE" && \
+     grep -qE '^## (Skills|워크플로우 \(절차 문서\))$' "$RULES_FILE"; then
+    awk '
+      /^## Skills$/ {
+        print "## 워크플로우 (절차 문서)";
+        print "";
+        print "각 절차의 상세 단계는 `.claude/skills/<이름>/SKILL.md`에 있다.";
+        print "슬래시 커맨드를 지원하는 환경에서는 `/<이름>`으로 호출되고, 그렇지 않은 환경에서는";
+        print "**같은 SKILL.md를 읽고 동일한 절차를 그대로 따른다.** 호출 방식이 달라도 결과는 같아야 한다.";
+        next
+      }
+      /^## 워크플로우 \(절차 문서\)$/ {
+        print;
+        print "";
+        print "각 절차의 상세 단계는 `.claude/skills/<이름>/SKILL.md`에 있다.";
+        print "슬래시 커맨드를 지원하는 환경에서는 `/<이름>`으로 호출되고, 그렇지 않은 환경에서는";
+        print "**같은 SKILL.md를 읽고 동일한 절차를 그대로 따른다.** 호출 방식이 달라도 결과는 같아야 한다.";
+        next
+      }
+      { print }
+    ' "$RULES_FILE" > "$RULES_FILE.tmp" && mv "$RULES_FILE.tmp" "$RULES_FILE"
+    echo "  정리: 워크플로우에 SKILL.md 공용 라우팅 추가"
+    APPENDED=1
+  fi
+
+  # 구버전 표 헤더와 add-hook 저장 위치를 현재 공용 표현으로 교체
+  if grep -qE '^\| 커맨드[[:space:]]*\| 역할[[:space:]]*\|$' "$RULES_FILE" || \
+     grep -qF '자연어 자동화 요청을 훅으로 변환 (`settings.json`)' "$RULES_FILE"; then
+    sed -E \
+      -e 's#^\| 커맨드[[:space:]]*\| 역할[[:space:]]*\|$#| 워크플로우 | 역할 |#' \
+      -e 's#자연어 자동화 요청을 훅으로 변환 \(`settings.json`\)#자연어 자동화 요청을 훅으로 변환 (`settings.local.json`)#g' \
+      "$RULES_FILE" > "$RULES_FILE.tmp" && mv "$RULES_FILE.tmp" "$RULES_FILE"
+    echo "  정리: 워크플로우 표의 구버전 표현 교체"
+    APPENDED=1
+  fi
+
+  # 구버전 워크플로우 표의 Claude 슬래시 표기를 공용 이름으로 정규화
+  if grep -qE '^\|.*`/(new-spec|update-task|add-rule|update-architecture|migrate-from-ai|add-hook)' "$RULES_FILE"; then
+    awk '
+      /^\|/ {
+        gsub("`/new-spec", "`new-spec");
+        gsub("`/update-task", "`update-task");
+        gsub("`/add-rule", "`add-rule");
+        gsub("`/update-architecture", "`update-architecture");
+        gsub("`/migrate-from-ai", "`migrate-from-ai");
+        gsub("`/add-hook", "`add-hook");
+      }
+      { print }
+    ' "$RULES_FILE" > "$RULES_FILE.tmp" && mv "$RULES_FILE.tmp" "$RULES_FILE"
+    echo "  정리: 워크플로우 표의 슬래시 표기를 공용 이름으로 교체"
+    APPENDED=1
+  fi
+
+  # 구버전 본문에 남은 Claude 슬래시 실행 표현을 공용 워크플로우 표현으로 교체
+  if grep -qE '^/new-spec[[:space:]]+→|`/?update-architecture`를 실행|`/?add-rule`을 실행' "$RULES_FILE"; then
+    sed -E \
+      -e 's#^/new-spec[[:space:]]+→#new-spec   →#' \
+      -e 's#`/?update-architecture`를 실행#update-architecture 워크플로우를 실행#g' \
+      -e 's#`/?add-rule`을 실행#add-rule 워크플로우를 실행#g' \
+      "$RULES_FILE" > "$RULES_FILE.tmp" && mv "$RULES_FILE.tmp" "$RULES_FILE"
+    echo "  정리: 본문의 슬래시 실행 표현을 공용 워크플로우 표현으로 교체"
+    APPENDED=1
+  fi
+
   # 구버전 정리: "작업 완료 시" 규칙을 저널 방식으로 교체
   if grep -qF '**작업 완료 시**: `.claude/CURRENT_TASK.md` 항상 업데이트' "$RULES_FILE"; then
     awk '
@@ -184,14 +257,14 @@ if [ -f "$RULES_FILE" ]; then
 ## 기능 개발 워크플로우
 
 ```
-/new-spec  → 기획 초안 작성 (.claude/docs/specs/*.draft.md)
+new-spec   → 기획 초안 작성 (.claude/docs/specs/*.draft.md)
 사람       → 확정
 구현       → 문서 동기화 → draft 삭제
 ```
 
 **확정되지 않은 초안은 바로 코드로 옮기지 않는다.**
 
-깊은 검증이나 대량 병렬 작업이 필요하면 Claude Code의 서브에이전트(Task)로 격리된 컨텍스트에서 처리한다 — 메인 대화를 오염시키지 않는다.
+깊은 검증이나 대량 병렬 작업이 필요하면, 현재 에이전트 환경이 지원하는 격리된 서브에이전트로 처리한다 — 메인 대화를 오염시키지 않는다.
 WORKFLOW_SECTION
     APPENDED=1
   fi
@@ -251,13 +324,13 @@ WORKFLOW_SECTION
     rm -f "$KARPATHY_TMP"
   fi
 
-  # 1. Skills 테이블에 /add-rule 추가 (앵커는 표 행만 — 줄 시작이 '|')
-  if ! grep -qE '^\|.*/add-rule' "$RULES_FILE"; then
-    if grep -qE '^\|.*/update-task' "$RULES_FILE"; then
+  # 1. 워크플로우 표에 add-rule 추가 (앵커는 표 행만 — 줄 시작이 '|')
+  if ! grep -qE '^\|.*add-rule' "$RULES_FILE"; then
+    if grep -qE '^\|.*update-task' "$RULES_FILE"; then
       awk '
-        /^\|.*\/update-task/ {
+        /^\|.*update-task/ {
           print;
-          print "| `/add-rule <규칙>` | 프로젝트 규칙을 `conventions.md`에 추가 |";
+          print "| `add-rule <규칙>` | 프로젝트 규칙을 `conventions.md`에 추가 |";
           next
         }
         { print }
@@ -268,12 +341,12 @@ WORKFLOW_SECTION
   fi
 
   # 1-b. Skills 테이블에 /update-architecture 추가
-  if ! grep -qE '^\|.*/update-architecture' "$RULES_FILE"; then
-    if grep -qE '^\|.*/add-rule' "$RULES_FILE"; then
+  if ! grep -qE '^\|.*update-architecture' "$RULES_FILE"; then
+    if grep -qE '^\|.*add-rule' "$RULES_FILE"; then
       awk '
-        /^\|.*\/add-rule/ {
+        /^\|.*add-rule/ {
           print;
-          print "| `/update-architecture` | `architecture.md`를 현재 코드 기준으로 생성/갱신 |";
+          print "| `update-architecture` | `architecture.md`를 현재 코드 기준으로 생성/갱신 |";
           next
         }
         { print }
@@ -284,12 +357,12 @@ WORKFLOW_SECTION
   fi
 
   # 1-c. Skills 테이블에 /migrate-from-ai 추가
-  if ! grep -qE '^\|.*/migrate-from-ai' "$RULES_FILE"; then
-    if grep -qE '^\|.*/update-architecture' "$RULES_FILE"; then
+  if ! grep -qE '^\|.*migrate-from-ai' "$RULES_FILE"; then
+    if grep -qE '^\|.*update-architecture' "$RULES_FILE"; then
       awk '
-        /^\|.*\/update-architecture/ {
+        /^\|.*update-architecture/ {
           print;
-          print "| `/migrate-from-ai` | 구버전 `.ai/` 디렉토리를 새 구조로 분류·이동 |";
+          print "| `migrate-from-ai` | 구버전 `.ai/` 디렉토리를 새 구조로 분류·이동 |";
           next
         }
         { print }
@@ -300,12 +373,12 @@ WORKFLOW_SECTION
   fi
 
   # 1-c2. Skills 테이블에 /add-hook 추가
-  if ! grep -qE '^\|.*/add-hook' "$RULES_FILE"; then
-    if grep -qE '^\|.*/migrate-from-ai' "$RULES_FILE"; then
+  if ! grep -qE '^\|.*add-hook' "$RULES_FILE"; then
+    if grep -qE '^\|.*migrate-from-ai' "$RULES_FILE"; then
       awk '
-        /^\|.*\/migrate-from-ai/ {
+        /^\|.*migrate-from-ai/ {
           print;
-          print "| `/add-hook <설명>` | 자연어 자동화 요청을 훅으로 변환 (`settings.local.json`) |";
+          print "| `add-hook <설명>` | 자연어 자동화 요청을 훅으로 변환 (`settings.local.json`) |";
           next
         }
         { print }
@@ -379,7 +452,7 @@ DOC_FINDER
 
 ## 아키텍처 변경 감지 시
 
-다음 중 하나라도 발생하면 `/update-architecture`를 실행해 `architecture.md`를 갱신한다:
+다음 중 하나라도 발생하면 update-architecture 워크플로우를 실행해 `architecture.md`를 갱신한다:
 
 - 의존성 매니페스트 변경 (`package.json`, `go.mod`, `requirements.txt`, `Cargo.toml`, `pubspec.yaml` 등)
 - 새 top-level 디렉토리 생성 (src/, app/, pkg/ 등의 바로 아래)
@@ -389,7 +462,7 @@ DOC_FINDER
 
 버그 수정, 리팩터링, 로직 변경만으로는 갱신하지 않는다.
 
-**주 1회 정기 감사**: 세션 시작 출력에 "주간 아키텍처 감사 기한 경과" 신호가 보이면, 사용자의 첫 요청을 처리한 뒤 이 세션 안에서 `/update-architecture`를 실행한다. 문서와 코드의 드리프트는 조용히 쌓이므로 신호를 무시하지 않는다.
+**주 1회 정기 감사**: 세션 시작 출력에 "주간 아키텍처 감사 기한 경과" 신호가 보이면, 사용자의 첫 요청을 처리한 뒤 이 세션 안에서 update-architecture를 실행한다. 문서와 코드의 드리프트는 조용히 쌓이므로 신호를 무시하지 않는다.
 ARCH_SECTION
     APPENDED=1
   fi
@@ -401,7 +474,7 @@ ARCH_SECTION
       /버그 수정, 리팩터링, 로직 변경만으로는 갱신하지 않는다\./ && !done {
         print;
         print "";
-        print "**주 1회 정기 감사**: 세션 시작 출력에 \"주간 아키텍처 감사 기한 경과\" 신호가 보이면, 사용자의 첫 요청을 처리한 뒤 이 세션 안에서 `/update-architecture`를 실행한다. 문서와 코드의 드리프트는 조용히 쌓이므로 신호를 무시하지 않는다.";
+        print "**주 1회 정기 감사**: 세션 시작 출력에 \"주간 아키텍처 감사 기한 경과\" 신호가 보이면, 사용자의 첫 요청을 처리한 뒤 이 세션 안에서 update-architecture를 실행한다. 문서와 코드의 드리프트는 조용히 쌓이므로 신호를 무시하지 않는다.";
         done=1;
         next
       }
@@ -458,7 +531,7 @@ LADDER_SECTION
 
 ## 새 규칙 발견 시
 
-사용자 지시나 프로젝트 분석에서 아래 패턴을 감지하면 **즉시 `/add-rule`을 실행**해 `conventions.md`에 기록한다:
+사용자 지시나 프로젝트 분석에서 아래 패턴을 감지하면 **즉시 add-rule 워크플로우를 실행**해 `conventions.md`에 기록한다:
 
 | 감지 패턴 | 예시 |
 |---|---|
