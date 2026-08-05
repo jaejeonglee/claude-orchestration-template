@@ -14,8 +14,8 @@ PROJECT_NAME=$(basename "$TARGET_DIR")
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_LOCAL="$(dirname "$SCRIPT_DIR")"
 
-# 로컬 템플릿이 유효한지 확인 (CLAUDE.md.template 존재 여부로 판단)
-if [ ! -f "$TEMPLATE_LOCAL/CLAUDE.md.template" ]; then
+# 로컬 템플릿이 유효한지 확인 (AGENTS.md.template 존재 여부로 판단)
+if [ ! -f "$TEMPLATE_LOCAL/AGENTS.md.template" ]; then
   TEMPLATE_LOCAL=""
 fi
 
@@ -69,6 +69,10 @@ mkdir -p "$TARGET_DIR/.claude/skills/update-architecture"
 mkdir -p "$TARGET_DIR/.claude/skills/migrate-from-ai"
 mkdir -p "$TARGET_DIR/.claude/skills/add-hook"
 
+# 공용 훅 스크립트 + Codex 어댑터
+mkdir -p "$TARGET_DIR/.claude/hooks"
+mkdir -p "$TARGET_DIR/.codex"
+
 # 표준 문서 카테고리 디렉토리 (이미 있으면 그대로 유지)
 mkdir -p "$TARGET_DIR/.claude/docs/api"
 mkdir -p "$TARGET_DIR/.claude/docs/contracts"
@@ -86,6 +90,16 @@ copy_file ".claude/skills/update-architecture/SKILL.md" "$TARGET_DIR/.claude/ski
 copy_file ".claude/skills/migrate-from-ai/SKILL.md" "$TARGET_DIR/.claude/skills/migrate-from-ai/SKILL.md"
 copy_file ".claude/skills/add-hook/SKILL.md" "$TARGET_DIR/.claude/skills/add-hook/SKILL.md"
 copy_file ".claude/settings.json" "$TARGET_DIR/.claude/settings.json"
+
+# 공용 훅 스크립트 (Claude/Codex가 같은 파일을 호출)
+for hook in pre-tool-use post-tool-use session-start stop-check; do
+  copy_file ".claude/hooks/${hook}.sh" "$TARGET_DIR/.claude/hooks/${hook}.sh"
+  chmod +x "$TARGET_DIR/.claude/hooks/${hook}.sh"
+done
+
+# Codex 어댑터
+copy_file ".codex/hooks.json" "$TARGET_DIR/.codex/hooks.json"
+copy_file ".codex/README.md" "$TARGET_DIR/.codex/README.md"
 
 # 구버전 정리: 제거된 에이전트/스크립트 고아 파일 삭제
 for orphan in \
@@ -107,53 +121,63 @@ echo -e "${GREEN}[3/4] 문서 생성...${NC}"
 copy_if_not_exists ".claude/docs/architecture.md" "$TARGET_DIR/.claude/docs/architecture.md"
 copy_if_not_exists ".claude/docs/conventions.md" "$TARGET_DIR/.claude/docs/conventions.md"
 
-if [ -f "$TARGET_DIR/CLAUDE.md" ]; then
-  # 기존 CLAUDE.md가 있으면 누락된 섹션만 추가 (멱등적 병합)
+# 규칙 원본은 AGENTS.md (Claude/Codex 공용). CLAUDE.md는 이를 import하는 얇은 진입점.
+RULES_FILE="$TARGET_DIR/AGENTS.md"
+
+# 구버전 마이그레이션: 규칙이 CLAUDE.md에 통째로 들어있던 설치를 AGENTS.md로 승격
+if [ ! -f "$RULES_FILE" ] && [ -f "$TARGET_DIR/CLAUDE.md" ] \
+  && grep -qE '# Part 1\. 코딩 자세|## 핵심 규칙|## 탐색 사다리' "$TARGET_DIR/CLAUDE.md"; then
+  mv "$TARGET_DIR/CLAUDE.md" "$RULES_FILE"
+  echo "  이관: CLAUDE.md → AGENTS.md (규칙 원본 승격)"
+fi
+
+if [ -f "$RULES_FILE" ]; then
+  # 기존 AGENTS.md가 있으면 누락된 섹션만 추가 (멱등적 병합)
   APPENDED=0
 
   # 구버전 정리: "작업 완료 시" 규칙을 저널 방식으로 교체
-  if grep -qF '**작업 완료 시**: `.claude/CURRENT_TASK.md` 항상 업데이트' "$TARGET_DIR/CLAUDE.md"; then
+  if grep -qF '**작업 완료 시**: `.claude/CURRENT_TASK.md` 항상 업데이트' "$RULES_FILE"; then
     awk '
       /\*\*작업 완료 시\*\*: `\.claude\/CURRENT_TASK\.md` 항상 업데이트/ {
         print "- **작업 완료 시**: `date +\"%Y-%m-%d %H:%M\"`로 시각 확인 후 `.claude/JOURNAL.md`에 한 줄 요약 append, `.claude/CURRENT_TASK.md`는 \"지금 + 다음\"만 남기고 갱신 (완료 항목은 저널로 보내고 제거)";
         next
       }
       { print }
-    ' "$TARGET_DIR/CLAUDE.md" > "$TARGET_DIR/CLAUDE.md.tmp" && \
-      mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
+    ' "$RULES_FILE" > "$RULES_FILE.tmp" && \
+      mv "$RULES_FILE.tmp" "$RULES_FILE"
     echo "  정리: '작업 완료 시' 규칙을 JOURNAL 방식으로 교체"
     APPENDED=1
   fi
 
   # 구버전 정리: 제거된 "## 에이전트 라우팅" 섹션 삭제
-  if grep -q "^## 에이전트 라우팅" "$TARGET_DIR/CLAUDE.md"; then
+  if grep -q "^## 에이전트 라우팅" "$RULES_FILE"; then
     awk '
       /^## 에이전트 라우팅/ { skip=1; next }
       skip && /^---$/ { skip=0; next }
       skip { next }
       { print }
-    ' "$TARGET_DIR/CLAUDE.md" > "$TARGET_DIR/CLAUDE.md.tmp" && \
-      mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
+    ' "$RULES_FILE" > "$RULES_FILE.tmp" && \
+      mv "$RULES_FILE.tmp" "$RULES_FILE"
     echo "  정리: 구버전 '에이전트 라우팅' 섹션 제거"
     APPENDED=1
   fi
 
   # 구버전 정리: codex/gemini 참조가 남은 구버전 워크플로우 섹션 제거 후 신버전 추가
-  if grep -q "gemini-researcher\|codex-reasoner" "$TARGET_DIR/CLAUDE.md"; then
+  if grep -q "gemini-researcher\|codex-reasoner" "$RULES_FILE"; then
     awk '
       /^## 기능 개발 워크플로우/ { skip=1; next }
       skip && /^---$/ { skip=0; next }
       skip { next }
       { print }
-    ' "$TARGET_DIR/CLAUDE.md" > "$TARGET_DIR/CLAUDE.md.tmp" && \
-      mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
+    ' "$RULES_FILE" > "$RULES_FILE.tmp" && \
+      mv "$RULES_FILE.tmp" "$RULES_FILE"
     echo "  정리: 구버전 '기능 개발 워크플로우' 섹션 제거 (codex/gemini 참조)"
     APPENDED=1
   fi
 
   # 신버전 워크플로우 섹션 추가 (없으면)
-  if ! grep -q "^## 기능 개발 워크플로우" "$TARGET_DIR/CLAUDE.md"; then
-    cat >> "$TARGET_DIR/CLAUDE.md" << 'WORKFLOW_SECTION'
+  if ! grep -q "^## 기능 개발 워크플로우" "$RULES_FILE"; then
+    cat >> "$RULES_FILE" << 'WORKFLOW_SECTION'
 
 ---
 
@@ -172,14 +196,41 @@ WORKFLOW_SECTION
     APPENDED=1
   fi
 
-  # 0. Karpathy 4원칙 추가 (없으면 맨 앞 헤더 뒤에 삽입)
-  if ! grep -q "# Part 1. 코딩 자세" "$TARGET_DIR/CLAUDE.md"; then
+  # 0-a. 대화 자세(Part 0) 추가 (없으면 맨 앞 헤더 뒤에 삽입)
+  if ! grep -q "# Part 0. 대화 자세" "$RULES_FILE"; then
+    PART0_TMP=$(mktemp)
+    if [ -n "$TEMPLATE_LOCAL" ]; then
+      awk '/^# Part 0\./,/^# Part 1\./' "$TEMPLATE_LOCAL/AGENTS.md.template" \
+        | sed '$d' > "$PART0_TMP"
+    else
+      curl -sf "$TEMPLATE_REPO/AGENTS.md.template" \
+        | awk '/^# Part 0\./,/^# Part 1\./' \
+        | sed '$d' > "$PART0_TMP"
+    fi
+
+    if [ -s "$PART0_TMP" ]; then
+      {
+        head -n 1 "$RULES_FILE"
+        echo ""
+        echo "---"
+        echo ""
+        cat "$PART0_TMP"
+        tail -n +2 "$RULES_FILE"
+      } > "$RULES_FILE.tmp" && \
+        mv "$RULES_FILE.tmp" "$RULES_FILE"
+      APPENDED=1
+    fi
+    rm -f "$PART0_TMP"
+  fi
+
+  # 0-b. Karpathy 4원칙 추가 (없으면 맨 앞 헤더 뒤에 삽입)
+  if ! grep -q "# Part 1. 코딩 자세" "$RULES_FILE"; then
     KARPATHY_TMP=$(mktemp)
     if [ -n "$TEMPLATE_LOCAL" ]; then
-      awk '/^# Part 1\./,/^# Part 2\./' "$TEMPLATE_LOCAL/CLAUDE.md.template" \
+      awk '/^# Part 1\./,/^# Part 2\./' "$TEMPLATE_LOCAL/AGENTS.md.template" \
         | sed '$d' > "$KARPATHY_TMP"
     else
-      curl -sf "$TEMPLATE_REPO/CLAUDE.md.template" \
+      curl -sf "$TEMPLATE_REPO/AGENTS.md.template" \
         | awk '/^# Part 1\./,/^# Part 2\./' \
         | sed '$d' > "$KARPATHY_TMP"
     fi
@@ -187,22 +238,22 @@ WORKFLOW_SECTION
     if [ -s "$KARPATHY_TMP" ]; then
       # 첫 줄(헤더) + 구분선 + Karpathy 섹션 + 나머지
       {
-        head -n 1 "$TARGET_DIR/CLAUDE.md"
+        head -n 1 "$RULES_FILE"
         echo ""
         echo "---"
         echo ""
         cat "$KARPATHY_TMP"
-        tail -n +2 "$TARGET_DIR/CLAUDE.md"
-      } > "$TARGET_DIR/CLAUDE.md.tmp" && \
-        mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
+        tail -n +2 "$RULES_FILE"
+      } > "$RULES_FILE.tmp" && \
+        mv "$RULES_FILE.tmp" "$RULES_FILE"
       APPENDED=1
     fi
     rm -f "$KARPATHY_TMP"
   fi
 
   # 1. Skills 테이블에 /add-rule 추가 (앵커는 표 행만 — 줄 시작이 '|')
-  if ! grep -qE '^\|.*/add-rule' "$TARGET_DIR/CLAUDE.md"; then
-    if grep -qE '^\|.*/update-task' "$TARGET_DIR/CLAUDE.md"; then
+  if ! grep -qE '^\|.*/add-rule' "$RULES_FILE"; then
+    if grep -qE '^\|.*/update-task' "$RULES_FILE"; then
       awk '
         /^\|.*\/update-task/ {
           print;
@@ -210,15 +261,15 @@ WORKFLOW_SECTION
           next
         }
         { print }
-      ' "$TARGET_DIR/CLAUDE.md" > "$TARGET_DIR/CLAUDE.md.tmp" && \
-        mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
+      ' "$RULES_FILE" > "$RULES_FILE.tmp" && \
+        mv "$RULES_FILE.tmp" "$RULES_FILE"
       APPENDED=1
     fi
   fi
 
   # 1-b. Skills 테이블에 /update-architecture 추가
-  if ! grep -qE '^\|.*/update-architecture' "$TARGET_DIR/CLAUDE.md"; then
-    if grep -qE '^\|.*/add-rule' "$TARGET_DIR/CLAUDE.md"; then
+  if ! grep -qE '^\|.*/update-architecture' "$RULES_FILE"; then
+    if grep -qE '^\|.*/add-rule' "$RULES_FILE"; then
       awk '
         /^\|.*\/add-rule/ {
           print;
@@ -226,15 +277,15 @@ WORKFLOW_SECTION
           next
         }
         { print }
-      ' "$TARGET_DIR/CLAUDE.md" > "$TARGET_DIR/CLAUDE.md.tmp" && \
-        mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
+      ' "$RULES_FILE" > "$RULES_FILE.tmp" && \
+        mv "$RULES_FILE.tmp" "$RULES_FILE"
       APPENDED=1
     fi
   fi
 
   # 1-c. Skills 테이블에 /migrate-from-ai 추가
-  if ! grep -qE '^\|.*/migrate-from-ai' "$TARGET_DIR/CLAUDE.md"; then
-    if grep -qE '^\|.*/update-architecture' "$TARGET_DIR/CLAUDE.md"; then
+  if ! grep -qE '^\|.*/migrate-from-ai' "$RULES_FILE"; then
+    if grep -qE '^\|.*/update-architecture' "$RULES_FILE"; then
       awk '
         /^\|.*\/update-architecture/ {
           print;
@@ -242,15 +293,15 @@ WORKFLOW_SECTION
           next
         }
         { print }
-      ' "$TARGET_DIR/CLAUDE.md" > "$TARGET_DIR/CLAUDE.md.tmp" && \
-        mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
+      ' "$RULES_FILE" > "$RULES_FILE.tmp" && \
+        mv "$RULES_FILE.tmp" "$RULES_FILE"
       APPENDED=1
     fi
   fi
 
   # 1-c2. Skills 테이블에 /add-hook 추가
-  if ! grep -qE '^\|.*/add-hook' "$TARGET_DIR/CLAUDE.md"; then
-    if grep -qE '^\|.*/migrate-from-ai' "$TARGET_DIR/CLAUDE.md"; then
+  if ! grep -qE '^\|.*/add-hook' "$RULES_FILE"; then
+    if grep -qE '^\|.*/migrate-from-ai' "$RULES_FILE"; then
       awk '
         /^\|.*\/migrate-from-ai/ {
           print;
@@ -258,14 +309,14 @@ WORKFLOW_SECTION
           next
         }
         { print }
-      ' "$TARGET_DIR/CLAUDE.md" > "$TARGET_DIR/CLAUDE.md.tmp" && \
-        mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
+      ' "$RULES_FILE" > "$RULES_FILE.tmp" && \
+        mv "$RULES_FILE.tmp" "$RULES_FILE"
       APPENDED=1
     fi
   fi
 
   # 1-d. "문서 찾기" 섹션 추가 (없으면 "## 세션 시작 시" 섹션 뒤에 삽입)
-  if ! grep -q "## 문서 찾기" "$TARGET_DIR/CLAUDE.md"; then
+  if ! grep -q "## 문서 찾기" "$RULES_FILE"; then
     DOCFINDER_TMP=$(mktemp)
     cat > "$DOCFINDER_TMP" << 'DOC_FINDER'
 
@@ -293,7 +344,7 @@ WORKFLOW_SECTION
 DOC_FINDER
 
     # "## 세션 시작 시" 섹션 끝나는 지점 또는 파일 끝에 삽입
-    if grep -q "## 세션 시작 시" "$TARGET_DIR/CLAUDE.md"; then
+    if grep -q "## 세션 시작 시" "$RULES_FILE"; then
       # 첫 번째 "---" 구분선 뒤에 삽입
       awk -v doc_finder_file="$DOCFINDER_TMP" '
         BEGIN { inserted = 0 }
@@ -311,18 +362,18 @@ DOC_FINDER
             close(doc_finder_file)
           }
         }
-      ' "$TARGET_DIR/CLAUDE.md" > "$TARGET_DIR/CLAUDE.md.tmp" && \
-        mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
+      ' "$RULES_FILE" > "$RULES_FILE.tmp" && \
+        mv "$RULES_FILE.tmp" "$RULES_FILE"
     else
-      cat "$DOCFINDER_TMP" >> "$TARGET_DIR/CLAUDE.md"
+      cat "$DOCFINDER_TMP" >> "$RULES_FILE"
     fi
     rm -f "$DOCFINDER_TMP"
     APPENDED=1
   fi
 
   # 2-a. "아키텍처 변경 감지 시" 섹션 추가
-  if ! grep -q "## 아키텍처 변경 감지 시" "$TARGET_DIR/CLAUDE.md"; then
-    cat >> "$TARGET_DIR/CLAUDE.md" << 'ARCH_SECTION'
+  if ! grep -q "## 아키텍처 변경 감지 시" "$RULES_FILE"; then
+    cat >> "$RULES_FILE" << 'ARCH_SECTION'
 
 ---
 
@@ -344,8 +395,8 @@ ARCH_SECTION
   fi
 
   # 2-b. 아키텍처 섹션은 있는데 주간 감사 규칙이 없는 구버전 → 규칙 줄 삽입
-  if grep -q "## 아키텍처 변경 감지 시" "$TARGET_DIR/CLAUDE.md" && \
-     ! grep -q "주 1회 정기 감사" "$TARGET_DIR/CLAUDE.md"; then
+  if grep -q "## 아키텍처 변경 감지 시" "$RULES_FILE" && \
+     ! grep -q "주 1회 정기 감사" "$RULES_FILE"; then
     awk '
       /버그 수정, 리팩터링, 로직 변경만으로는 갱신하지 않는다\./ && !done {
         print;
@@ -355,15 +406,15 @@ ARCH_SECTION
         next
       }
       { print }
-    ' "$TARGET_DIR/CLAUDE.md" > "$TARGET_DIR/CLAUDE.md.tmp" && \
-      mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
+    ' "$RULES_FILE" > "$RULES_FILE.tmp" && \
+      mv "$RULES_FILE.tmp" "$RULES_FILE"
     echo "  정리: '주 1회 정기 감사' 규칙 추가"
     APPENDED=1
   fi
 
   # 2-b2. 핵심 규칙에 테스트·커밋 규칙 추가 (없으면 "## 핵심 규칙" 헤더 직후 삽입)
-  if grep -q "^## 핵심 규칙" "$TARGET_DIR/CLAUDE.md" && \
-     ! grep -q "구현 완료 선언 전 테스트" "$TARGET_DIR/CLAUDE.md"; then
+  if grep -q "^## 핵심 규칙" "$RULES_FILE" && \
+     ! grep -q "구현 완료 선언 전 테스트" "$RULES_FILE"; then
     awk '
       /^## 핵심 규칙/ && !done {
         print; getline nl; print nl;
@@ -372,15 +423,15 @@ ARCH_SECTION
         done=1; next
       }
       { print }
-    ' "$TARGET_DIR/CLAUDE.md" > "$TARGET_DIR/CLAUDE.md.tmp" && \
-      mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
+    ' "$RULES_FILE" > "$RULES_FILE.tmp" && \
+      mv "$RULES_FILE.tmp" "$RULES_FILE"
     echo "  정리: 핵심 규칙에 테스트·커밋 규칙 추가"
     APPENDED=1
   fi
 
   # 2-c. "탐색 사다리" 섹션 추가
-  if ! grep -q "탐색 사다리" "$TARGET_DIR/CLAUDE.md"; then
-    cat >> "$TARGET_DIR/CLAUDE.md" << 'LADDER_SECTION'
+  if ! grep -q "탐색 사다리" "$RULES_FILE"; then
+    cat >> "$RULES_FILE" << 'LADDER_SECTION'
 
 ---
 
@@ -400,8 +451,8 @@ LADDER_SECTION
   fi
 
   # 2. "새 규칙 발견 시" 섹션 추가
-  if ! grep -q "## 새 규칙 발견 시" "$TARGET_DIR/CLAUDE.md"; then
-    cat >> "$TARGET_DIR/CLAUDE.md" << 'RULE_SECTION'
+  if ! grep -q "## 새 규칙 발견 시" "$RULES_FILE"; then
+    cat >> "$RULES_FILE" << 'RULE_SECTION'
 
 ---
 
@@ -422,11 +473,23 @@ RULE_SECTION
   fi
 
   if [ $APPENDED -eq 1 ]; then
-    echo "  업데이트: CLAUDE.md (누락 섹션 추가)"
+    echo "  업데이트: AGENTS.md (누락 섹션 추가)"
   else
-    echo "  건너뜀: CLAUDE.md (최신 상태)"
+    echo "  건너뜀: AGENTS.md (최신 상태)"
   fi
 else
+  if [ -n "$TEMPLATE_LOCAL" ]; then
+    sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
+      "$TEMPLATE_LOCAL/AGENTS.md.template" > "$RULES_FILE"
+  else
+    curl -sf "$TEMPLATE_REPO/AGENTS.md.template" | \
+      sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" > "$RULES_FILE"
+  fi
+  echo "  생성: AGENTS.md"
+fi
+
+# CLAUDE.md — AGENTS.md를 import하는 얇은 진입점
+if [ ! -f "$TARGET_DIR/CLAUDE.md" ]; then
   if [ -n "$TEMPLATE_LOCAL" ]; then
     sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
       "$TEMPLATE_LOCAL/CLAUDE.md.template" > "$TARGET_DIR/CLAUDE.md"
@@ -434,7 +497,15 @@ else
     curl -sf "$TEMPLATE_REPO/CLAUDE.md.template" | \
       sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" > "$TARGET_DIR/CLAUDE.md"
   fi
-  echo "  생성: CLAUDE.md"
+  echo "  생성: CLAUDE.md (AGENTS.md import)"
+elif ! grep -q '@AGENTS\.md' "$TARGET_DIR/CLAUDE.md"; then
+  # 사용자 커스텀 CLAUDE.md가 이미 있으면 import 한 줄만 앞에 붙인다
+  {
+    echo "@AGENTS.md"
+    echo ""
+    cat "$TARGET_DIR/CLAUDE.md"
+  } > "$TARGET_DIR/CLAUDE.md.tmp" && mv "$TARGET_DIR/CLAUDE.md.tmp" "$TARGET_DIR/CLAUDE.md"
+  echo "  업데이트: CLAUDE.md (@AGENTS.md import 추가)"
 fi
 
 if [ -f "$TARGET_DIR/.claude/CURRENT_TASK.md" ]; then
@@ -486,7 +557,7 @@ fi
 # [4/4] .gitignore
 echo -e "${GREEN}[4/4] .gitignore 업데이트...${NC}"
 GITIGNORE="$TARGET_DIR/.gitignore"
-for entry in ".claude" "CLAUDE.md"; do
+for entry in ".claude" ".codex" "CLAUDE.md" "AGENTS.md"; do
   if [ -f "$GITIGNORE" ] && grep -qxF "$entry" "$GITIGNORE"; then
     echo "  이미 있음: $entry"
   else

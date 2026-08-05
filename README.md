@@ -20,7 +20,13 @@ Claude Code를 더 체계적으로 쓰기 위한 설정 템플릿.
 bash <(curl -s https://raw.githubusercontent.com/jaejeonglee/claude-template/main/scripts/init.sh)
 ```
 
-설정 파일은 `.claude/` 폴더에 들어가고, `.gitignore`에 자동으로 추가됩니다 (= Git에 안 올라감, 내 컴퓨터에만 있음).
+설정 파일은 `.claude/`·`.codex/` 폴더와 `AGENTS.md`·`CLAUDE.md`로 들어가고, `.gitignore`에 자동으로 추가됩니다 (= Git에 안 올라감, 내 컴퓨터에만 있음).
+
+### Claude Code와 Codex 함께 쓰기
+
+규칙 원본은 `AGENTS.md` 하나입니다. Claude는 `CLAUDE.md`가 이걸 import하고, Codex는 `AGENTS.md`를 직접 읽습니다. 훅 로직(`.claude/hooks/*.sh`)도 양쪽이 같은 스크립트를 호출하므로 **위험 명령 차단·저장 시 포맷팅·세션 시작 컨텍스트가 동일하게 동작**합니다.
+
+같아지지 않는 부분도 있습니다. Claude는 종료 시 의미론적 판단(에러 핸들링 충분성 등)이 가능한 prompt 훅을 쓰지만 Codex는 command 훅만 실행하므로, Codex 쪽은 결정적으로 확인 가능한 항목만 권고합니다. 자세한 조건과 비대칭은 `.codex/README.md`에 있습니다.
 
 ---
 

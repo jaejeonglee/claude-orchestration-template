@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CMD=$(jq -r '.tool_input.command // empty' 2>/dev/null); if [ -n \"$CMD\" ]; then if echo \"$CMD\" | grep -Eq 'git[[:space:]]+push' && echo \"$CMD\" | grep -Eq '(^|[[:space:]])--force([[:space:]]|$)|(^|[[:space:]])-f([[:space:]]|$)'; then echo '차단: force push는 되돌릴 수 없습니다. 필요하면 사람이 직접 실행하세요 (--force-with-lease는 허용됨)' >&2; exit 2; fi; if echo \"$CMD\" | grep -Eq 'git[[:space:]]+reset([[:space:]]+[^-][^[:space:]]*)*[[:space:]]+--hard'; then echo '차단: git reset --hard는 커밋 안 된 작업을 날립니다. 사람이 직접 실행하세요' >&2; exit 2; fi; if echo \"$CMD\" | grep -Eq 'git[[:space:]]+clean[[:space:]]' && echo \"$CMD\" | grep -Eq '(^|[[:space:]])-[a-zA-Z]*f'; then echo '차단: git clean -f는 미추적 파일을 삭제합니다. 사람이 직접 실행하세요' >&2; exit 2; fi; if echo \"$CMD\" | grep -Eq '(^|[[:space:]])rm[[:space:]]' && echo \"$CMD\" | grep -Eq 'rm[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*-[a-zA-Z]*r|--recursive' && echo \"$CMD\" | grep -Eq '(^|[[:space:]])(/|~|\\.|\\.\\.)([[:space:]]|$)|(^|[[:space:]])(/\\*|~/\\*)([[:space:]]|$)'; then echo '차단: 재귀 삭제가 루트/홈/현재 디렉토리를 대상으로 합니다. 사람이 직접 실행하세요' >&2; exit 2; fi; fi; exit 0"
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/pre-tool-use.sh\""
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); cd \"${CLAUDE_PROJECT_DIR:-.}\" 2>/dev/null; if [ -n \"$FILE\" ] && [ -f \"$FILE\" ]; then case \"$FILE\" in *.js|*.cjs|*.mjs|*.jsx|*.ts|*.tsx) npx --no-install eslint --fix \"$FILE\" 2>/dev/null ;; *.py) if command -v ruff >/dev/null 2>&1; then ruff format \"$FILE\" 2>/dev/null; ruff check --fix \"$FILE\" 2>/dev/null; elif command -v black >/dev/null 2>&1; then black -q \"$FILE\" 2>/dev/null; fi ;; *.go) command -v gofmt >/dev/null 2>&1 && gofmt -w \"$FILE\" 2>/dev/null ;; *.rs) command -v rustfmt >/dev/null 2>&1 && rustfmt \"$FILE\" 2>/dev/null ;; esac; fi; exit 0"
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/post-tool-use.sh\""
           }
         ]
       }
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "판단 범위는 **마지막 사용자 메시지 이후의 턴**만입니다 (대화 전체가 아님). 그 범위에서 Edit/Write 도구로 파일을 수정한 적이 있는지 확인하세요. 수정이 없었다면 (분석·설명·질문 답변만 했다면) {\"ok\": true} 로 즉시 응답하세요. 수정이 있었다면: 1) 에러 핸들링 누락, 2) 코드 로직을 변경했는데 관련 테스트를 실행하지 않았거나 실패를 방치함 (테스트가 없는 프로젝트나 문서·설정 전용 변경이면 이 항목은 건너뜀), 3) 관련 문서 동기화 누락, 4) 작업 단위가 완료되었는데 .claude/JOURNAL.md에 시점과 함께 기록되지 않음, 5) .claude/CURRENT_TASK.md가 현재 상태와 다름(완료 항목이 남아있으면 저널로 이동 후 제거), 6) 작업 단위가 완료되었는데 커밋되지 않은 변경이 남아있음을 사용자에게 알리지 않음 (커밋 여부는 사용자 결정, 알림만 필수) — 중 해당하는 것이 있으면 {\"ok\": false, \"reason\": \"[이유]\"}, 없으면 {\"ok\": true} 로 응답하세요. 아직 진행 중인 작업이면 저널·커밋 항목은 요구하지 마세요."
+            "prompt": "판단 범위는 **마지막 사용자 메시지 이후의 턴**만입니다 (대화 전체가 아님). 그 범위에서 파일을 수정한 적이 있는지 확인하세요 (Edit/Write 도구뿐 아니라 Bash의 리다이렉션·heredoc으로 파일에 쓴 경우도 포함). 수정이 없었다면 (분석·설명·질문 답변만 했다면) {\"ok\": true} 로 즉시 응답하세요. 수정이 있었다면: 1) 에러 핸들링 누락, 2) 코드 로직을 변경했는데 관련 테스트를 실행하지 않았거나 실패를 방치함 (테스트가 없는 프로젝트나 문서·설정 전용 변경이면 이 항목은 건너뜀), 3) 관련 문서 동기화 누락, 4) 작업 단위가 완료되었는데 .claude/JOURNAL.md에 시점과 함께 기록되지 않음, 5) .claude/CURRENT_TASK.md가 현재 상태와 다름(완료 항목이 남아있으면 저널로 이동 후 제거), 6) 작업 단위가 완료되었는데 커밋되지 않은 변경이 남아있음을 사용자에게 알리지 않음 (커밋 여부는 사용자 결정, 알림만 필수) — 중 해당하는 것이 있으면 {\"ok\": false, \"reason\": \"[이유]\"}, 없으면 {\"ok\": true} 로 응답하세요. 아직 진행 중인 작업이면 저널·커밋 항목은 요구하지 마세요."
           }
         ]
       }
@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" 2>/dev/null; echo '=== 현재 작업 ===' && cat .claude/CURRENT_TASK.md 2>/dev/null; echo ''; echo '=== 최근 작업 기록 (JOURNAL 끝 15줄) ==='; tail -n 15 .claude/JOURNAL.md 2>/dev/null; echo ''; echo '=== 문서 구조 (.claude/docs/) ==='; (cd .claude/docs 2>/dev/null && find . -maxdepth 2 -not -path '.' | sort); echo ''; echo '=== 최근 커밋 ==='; git log --oneline -5 2>/dev/null; DIRTY=$(git status --short 2>/dev/null | head -15); if [ -n \"$DIRTY\" ]; then echo ''; echo '=== 커밋 안 된 변경 (이전 세션의 잔재일 수 있음) ==='; echo \"$DIRTY\"; fi; if [ -f .claude/.last-arch-audit ] && [ -n \"$(find .claude/.last-arch-audit -mtime +7 2>/dev/null)\" ] && [ \"$(git log --oneline --since='7 days ago' 2>/dev/null | wc -l)\" -gt 0 ]; then echo ''; echo '=== 주간 아키텍처 감사 기한 경과 — 이 세션에서 /update-architecture 를 실행하세요 ==='; fi; if [ -f .claude/CURRENT_TASK.md ] && [ -n \"$(find .claude/CURRENT_TASK.md -mtime +14 2>/dev/null)\" ] && [ \"$(git log --oneline --since='14 days ago' 2>/dev/null | wc -l)\" -gt 0 ]; then echo ''; echo '=== CURRENT_TASK.md가 14일째 갱신되지 않았는데 커밋은 계속되었습니다 — 상태 파일이 죽었을 수 있으니 /update-task 실행 권장 ==='; fi; true"
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/session-start.sh\""
           }
         ]
       }
