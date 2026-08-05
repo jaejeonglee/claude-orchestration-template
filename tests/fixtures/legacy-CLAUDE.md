@@ -20,11 +20,13 @@
 |---|---|
 | `/new-spec <기능명>` | 기획 초안 작성 |
 | `/update-task` | 현재 상태 갱신 |
-| `/add-hook` | 자연어 자동화 요청을 훅으로 변환 (`settings.json`) |
+| `/add-hook <설명>` | 자연어 자동화 요청을 훅으로 변환 (`settings.json`) |
 
 ## 아키텍처 변경 감지 시
 
 다음 중 하나라도 발생하면 `/update-architecture`를 실행해 `architecture.md`를 갱신한다.
+| `migrate-from-ai` | 구버전 `.ai/` 디렉토리를 새 구조로 분류·이동 |
+| `add-hook <설명>` | 자연어 자동화 요청을 훅으로 변환 (`settings.local.json`) |
 
 ## 새 규칙 발견 시
 

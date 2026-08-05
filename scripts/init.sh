@@ -208,6 +208,33 @@ if [ -f "$RULES_FILE" ]; then
     APPENDED=1
   fi
 
+  # 구버전 삽입 버그 정리: 워크플로우 행이 아키텍처 섹션에 들어간 설치본 복구
+  CLEANUP_TMP=$(mktemp)
+  awk '
+    /^## 아키텍처 변경 감지 시$/ {
+      in_architecture=1
+      print
+      next
+    }
+    in_architecture && /^## / {
+      in_architecture=0
+    }
+    in_architecture && index($0, "migrate-from-ai") && index($0, "구버전 `.ai/`") {
+      next
+    }
+    in_architecture && index($0, "add-hook <설명>") && index($0, "settings.local.json") {
+      next
+    }
+    { print }
+  ' "$RULES_FILE" > "$CLEANUP_TMP"
+  if ! cmp -s "$RULES_FILE" "$CLEANUP_TMP"; then
+    mv "$CLEANUP_TMP" "$RULES_FILE"
+    echo "  정리: 아키텍처 섹션에 잘못 삽입된 워크플로우 행 제거"
+    APPENDED=1
+  else
+    rm -f "$CLEANUP_TMP"
+  fi
+
   # 구버전 정리: "작업 완료 시" 규칙을 저널 방식으로 교체
   if grep -qF '**작업 완료 시**: `.claude/CURRENT_TASK.md` 항상 업데이트' "$RULES_FILE"; then
     awk '

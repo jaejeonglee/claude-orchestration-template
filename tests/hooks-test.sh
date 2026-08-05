@@ -127,6 +127,10 @@ assert_contains "$MIGRATED_AGENTS" 'update-architecture 워크플로우를 실�
 assert_contains "$MIGRATED_AGENTS" 'add-rule 워크플로우를 실행'
 assert_not_contains "$MIGRATED_AGENTS" 'Claude Code의 서브에이전트(Task)'
 assert_not_contains "$MIGRATED_AGENTS" '`/new-spec'
+[ "$(grep -cF '| `migrate-from-ai` |' "$MIGRATED_AGENTS")" -eq 1 ] \
+  || fail "migrate-from-ai workflow row must exist only in the workflow table"
+[ "$(grep -cF '| `add-hook <설명>` |' "$MIGRATED_AGENTS")" -eq 1 ] \
+  || fail "add-hook workflow row must exist only in the workflow table"
 
 INSTALLED_PRE_COMMAND=$(jq -r '.hooks.PreToolUse[0].hooks[0].command' "$MIGRATION_REPO/.codex/hooks.json")
 printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git status"}}' \
